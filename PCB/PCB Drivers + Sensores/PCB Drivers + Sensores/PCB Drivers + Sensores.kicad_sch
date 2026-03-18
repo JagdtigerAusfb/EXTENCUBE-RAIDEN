@@ -10535,6 +10535,28 @@
 			)
 		)
 	)
+	(global_label "GND"
+		(shape input)
+		(at 54.61 170.18 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "0d3bf649-72e0-41f2-afdf-4afe5decf415")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 61.5608 170.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+	)
 	(global_label "SDA_7"
 		(shape input)
 		(at 27.94 264.16 0)
