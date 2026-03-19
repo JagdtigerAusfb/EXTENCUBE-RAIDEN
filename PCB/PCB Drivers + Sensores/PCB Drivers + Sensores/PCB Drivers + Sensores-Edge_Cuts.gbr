@@ -1,0 +1,23 @@
+%TF.GenerationSoftware,KiCad,Pcbnew,9.0.7*%
+%TF.CreationDate,2026-03-19T17:11:35-03:00*%
+%TF.ProjectId,PCB Drivers + Sensores,50434220-4472-4697-9665-7273202b2053,rev?*%
+%TF.SameCoordinates,Original*%
+%TF.FileFunction,Profile,NP*%
+%FSLAX46Y46*%
+G04 Gerber Fmt 4.6, Leading zero omitted, Abs format (unit mm)*
+G04 Created by KiCad (PCBNEW 9.0.7) date 2026-03-19 17:11:35*
+%MOMM*%
+%LPD*%
+G01*
+G04 APERTURE LIST*
+%TA.AperFunction,Profile*%
+%ADD10C,0.150000*%
+%TD*%
+G04 APERTURE END LIST*
+D10*
+X100000000Y-60000000D02*
+X250000000Y-60000000D01*
+X250000000Y-215000000D01*
+X100000000Y-215000000D01*
+X100000000Y-60000000D01*
+M02*
