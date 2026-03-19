@@ -37,9 +37,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 3.048,
-          "height": 4.064,
-          "width": 4.064
+          "drill": 1.0,
+          "height": 1.53,
+          "width": 1.53
         },
         "silk_line_width": 0.15,
         "silk_text_italic": false,
@@ -49,7 +49,7 @@
         "silk_text_upright": false,
         "zones": {
           "45_degree_only": false,
-          "min_clearance": 0.5
+          "min_clearance": 0.75
         }
       },
       "diff_pair_dimensions": [
@@ -59,7 +59,24 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        [
+          "items_not_allowed|106324600|66345000|2b84f72e-47b9-445f-bb8b-de53f5482450|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "items_not_allowed|106620405|208372017|c4d391d8-a42a-4498-ae35-2d3042a549b8|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "items_not_allowed|243696544|208552190|c7cfd682-06e4-4dba-9884-157fa6940327|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "items_not_allowed|243713200|66370400|14a4902c-1a2f-49cb-b3cd-e00edcaa0514|00000000-0000-0000-0000-000000000000",
+          ""
+        ]
+      ],
       "meta": {
         "filename": "board_design_settings.json",
         "version": 2
@@ -131,7 +148,7 @@
         "max_error": 0.005,
         "min_clearance": 0.3,
         "min_connection": 0.0,
-        "min_copper_edge_clearance": 0.075,
+        "min_copper_edge_clearance": 2.0,
         "min_groove_width": 0.0,
         "min_hole_clearance": 0.0,
         "min_hole_to_hole": 0.25,
@@ -194,11 +211,12 @@
       ],
       "track_widths": [
         0.0,
-        0.2,
-        0.25,
-        0.4,
-        0.6,
-        0.762
+        0.254,
+        0.508,
+        0.762,
+        1.016,
+        1.524,
+        2.032
       ],
       "tuning_pattern_settings": {
         "diff_pair_defaults": {
@@ -232,16 +250,16 @@
           "drill": 0.0
         },
         {
-          "diameter": 0.6,
-          "drill": 0.3
+          "diameter": 0.8128,
+          "drill": 0.4064
         },
         {
-          "diameter": 0.8,
-          "drill": 0.4
+          "diameter": 1.016,
+          "drill": 0.6096
         },
         {
-          "diameter": 1.0,
-          "drill": 0.5
+          "diameter": 2.032,
+          "drill": 1.016
         }
       ],
       "zones_allow_external_fillets": false,
