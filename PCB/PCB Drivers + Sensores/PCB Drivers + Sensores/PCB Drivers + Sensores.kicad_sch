@@ -15999,7 +15999,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "47f6b9bd-b422-4780-8256-a2dc260023cf")
-		(property "Reference" "Screw_Terminal_01x02"
+		(property "Reference" "+12V_2"
 			(at 107.95 39.37 0)
 			(effects
 				(font
@@ -16054,7 +16054,7 @@
 		(instances
 			(project ""
 				(path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-					(reference "Screw_Terminal_01x02")
+					(reference "+12V_2")
 					(unit 1)
 				)
 			)
@@ -20445,7 +20445,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "dbe31c17-84fe-4fa6-ac91-648471372e0d")
-		(property "Reference" "Screw_Terminal_01x1"
+		(property "Reference" "+12V_1"
 			(at 107.95 57.15 0)
 			(effects
 				(font
@@ -20500,7 +20500,7 @@
 		(instances
 			(project "PCB Drivers + Sensores"
 				(path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-					(reference "Screw_Terminal_01x1")
+					(reference "+12V_1")
 					(unit 1)
 				)
 			)
