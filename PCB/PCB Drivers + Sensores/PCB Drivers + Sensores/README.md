@@ -104,3 +104,8 @@ Note that these are based on what was easiest to route on the board physicaly.
  **Reset Button:** The board includes a physical Reset button for the Arduino. This can also be omitted.
  
  **Highly Recommended - Capacitors:** While the board might technically work without them, installing the decoupling capacitors for the motor drivers is **highly recommended**. They are crucial for preventing voltage spikes that can permanently damage the A4988 drivers.
+
+## Comments
+
+ > [!NOTE]
+> The Arduino connectors in the PCB project are only female, but in reality they should be male and female connects (they should have the female connector on top and the male pins on the bottom to connect to the Arduino), the 3D model just shows the famele pins. Be carefull not to order the wrong connector!
