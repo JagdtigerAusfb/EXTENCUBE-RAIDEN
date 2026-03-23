@@ -489,10 +489,6 @@ class CoverPage(QWidget):
         # Aplica Negrito em toda a página por padrão
         self.setStyleSheet("font-weight: bold;")
 
-        # ================= APP TITLE & ICON =================
-        self.window().setWindowTitle("Rubik’s Cube Robot Solver")
-        self.window().setWindowIcon(QIcon("logo_pro.jpg"))
-
         # ================= SERIAL =================
         self.arduino = None
         self.serial_port = "COM4"
@@ -940,7 +936,11 @@ class MainApp(QStackedWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainApp()
-    window.setWindowTitle("Cube_App")
+    
+    # ================= APP TITLE & ICON =================
+    window.setWindowTitle("Rubik’s Cube Robot Solver")
+    window.setWindowIcon(QIcon("logo_pro.jpg"))
+
     window.resize(900, 750)
     window.show()
     sys.exit(app.exec())
