@@ -2,3 +2,12 @@ The main code can be found int the CUBE_APP folder. When reunning the code you s
 
 <img width="1258" height="815" alt="image" src="https://github.com/user-attachments/assets/c4e82f1e-5489-4e53-abb8-3a05e5fa0e03" />
 
+The following libraries are required for this code:
+
+opencv-python
+PyQt6
+numpy
+kociemba
+pyserial
+
+The code is divided in four main files: main.py, where the main code along with the UI elements and logic is. kociemba.py and m2op.py contain the code for the solving algothirms of the cube. And finally, arduino.ino contains the code for the arduino. Note that the code is not automatically writen in the arduino, you must do that manualy. 
