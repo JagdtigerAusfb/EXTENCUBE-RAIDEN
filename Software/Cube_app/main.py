@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QApplication, QWidget, QLabel,
     QPushButton, QVBoxLayout, QHBoxLayout,
     QSpinBox, QStackedWidget, QTextEdit,
-    QMessageBox, QLineEdit, QFrame,)
+    QMessageBox, QLineEdit, QFrame, QSizePolicy)
 from PyQt6.QtGui import (QFont, QPixmap, QIcon)
 
 from PyQt6.QtGui import QImage, QPixmap, QFont
@@ -481,8 +481,6 @@ class CubeStateCapturePage(QWidget):
 # ==========================================================
 # COVER PAGE
 # ==========================================================
-from PyQt6.QtWidgets import QSizePolicy # Adicionado para garantir o redimensionamento correto
-
 class CoverPage(QWidget):
     def __init__(self, stacked_widget):
         super().__init__()
@@ -493,7 +491,6 @@ class CoverPage(QWidget):
 
         # ================= APP TITLE & ICON =================
         self.window().setWindowTitle("Rubik’s Cube Robot Solver")
-        # Ensure QIcon is imported: from PyQt6.QtGui import QIcon
         self.window().setWindowIcon(QIcon("logo_pro.jpg"))
 
         # ================= SERIAL =================
@@ -542,43 +539,51 @@ class CoverPage(QWidget):
         # ================= Buttons =================
         btn_style_base = "font-weight: bold; border-radius: 8px; padding: 10px; min-height: 40px; color: white;"
         btn_fixed_width = 280  
+        
+        # Política para fazer os botões expandirem verticalmente
+        btn_size_policy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
 
         self.btn_calib = QPushButton("Calibration")
         self.btn_calib.clicked.connect(self.open_calibration)
         self.btn_calib.setFixedWidth(btn_fixed_width)
+        self.btn_calib.setSizePolicy(btn_size_policy)
         self.btn_calib.setStyleSheet(f"QPushButton {{ background-color: #e74c3c; {btn_style_base} }} QPushButton:hover {{ background-color: #c0392b; }}")
 
         btn_capture = QPushButton("Capture Cube State")
         btn_capture.clicked.connect(self.open_capture)
         btn_capture.setFixedWidth(btn_fixed_width)
+        btn_capture.setSizePolicy(btn_size_policy)
         btn_capture.setStyleSheet(f"QPushButton {{ background-color: #f39c12; {btn_style_base} }} QPushButton:hover {{ background-color: #e67e22; }}")
 
         btn_kociemba = QPushButton("Calculate solution with Kociemba")
         btn_kociemba.clicked.connect(self.solve_kociemba)
         btn_kociemba.setFixedWidth(btn_fixed_width)
+        btn_kociemba.setSizePolicy(btn_size_policy)
         btn_kociemba.setStyleSheet(f"QPushButton {{ background-color: #3498db; {btn_style_base} }} QPushButton:hover {{ background-color: #2980b9; }}")
 
         btn_m2op = QPushButton("Calculate solution with M2/OP")
         btn_m2op.clicked.connect(self.solve_m2op)
         btn_m2op.setFixedWidth(btn_fixed_width)
+        btn_m2op.setSizePolicy(btn_size_policy)
         btn_m2op.setStyleSheet(f"QPushButton {{ background-color: #3498db; {btn_style_base} }} QPushButton:hover {{ background-color: #2980b9; }}")
 
-        # ================= RESULT AREA CORRIGIDA =================
+        # ================= RESULT AREA =================
         self.result_area = QTextEdit()
         self.result_area.setReadOnly(True)
         self.result_area.setMinimumWidth(350) 
-        # Removido o limite máximo de altura! Agora ele desce junto com o painel esquerdo
         self.result_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.result_area.setFont(QFont("Arial", 10, QFont.Weight.Bold))
 
         btn_send_robot = QPushButton("Send Solve")
         btn_send_robot.clicked.connect(self.send_to_robot)
         btn_send_robot.setFixedWidth(btn_fixed_width)
+        btn_send_robot.setSizePolicy(btn_size_policy)
         btn_send_robot.setStyleSheet(f"QPushButton {{ background-color: #2ecc71; {btn_style_base} }} QPushButton:hover {{ background-color: #27ae60; }}")
 
         btn_send_inverted = QPushButton("Send Scramble (Reverse)")
         btn_send_inverted.clicked.connect(self.send_inverted_to_robot)
         btn_send_inverted.setFixedWidth(btn_fixed_width)
+        btn_send_inverted.setSizePolicy(btn_size_policy)
         btn_send_inverted.setStyleSheet(f"QPushButton {{ background-color: #2ecc71; {btn_style_base} }} QPushButton:hover {{ background-color: #27ae60; }}")
 
         # ================= MANUAL =================
@@ -645,7 +650,6 @@ class CoverPage(QWidget):
         col1.addWidget(lbl_col1)
         col1.addWidget(self.btn_calib)
         col1.addWidget(btn_capture)
-        col1.addStretch()
         columns_layout.addLayout(col1)
 
         # V-Line 1
@@ -663,7 +667,6 @@ class CoverPage(QWidget):
         col2.addWidget(lbl_col2)
         col2.addWidget(btn_kociemba)
         col2.addWidget(btn_m2op)
-        col2.addStretch()
         columns_layout.addLayout(col2)
 
         # V-Line 2
@@ -681,7 +684,6 @@ class CoverPage(QWidget):
         col3.addWidget(lbl_col3)
         col3.addWidget(btn_send_robot)
         col3.addWidget(btn_send_inverted)
-        col3.addStretch()
         columns_layout.addLayout(col3)
 
         left_panel.addLayout(columns_layout)
@@ -725,16 +727,12 @@ class CoverPage(QWidget):
         left_panel.addWidget(self.manual_input)
         left_panel.addWidget(btn_send_manual)
         
-        # REMOVIDO: left_panel.addStretch() para eliminar o buraco no final da página
-
         # --- RESULT AREA ---
         lbl_result = QLabel("Result:")
         lbl_result.setStyleSheet("font-weight: bold;")
         right_panel.addWidget(lbl_result)
         right_panel.addWidget(self.result_area)
         
-        # REMOVIDO: right_panel.addStretch() para a caixa colar perfeitamente com a base da página
-
         # Montagem do layout divido
         split_layout.addLayout(left_panel)
         
