@@ -481,6 +481,7 @@ class CubeStateCapturePage(QWidget):
 # ==========================================================
 # COVER PAGE
 # ==========================================================
+from PyQt6.QtWidgets import QSizePolicy # Adicionado para garantir o redimensionamento correto
 
 class CoverPage(QWidget):
     def __init__(self, stacked_widget):
@@ -539,36 +540,45 @@ class CoverPage(QWidget):
         """)
 
         # ================= Buttons =================
-        # Estilo comum para botões com texto em negrito
         btn_style_base = "font-weight: bold; border-radius: 8px; padding: 10px; min-height: 40px; color: white;"
+        btn_fixed_width = 280  
 
         self.btn_calib = QPushButton("Calibration")
         self.btn_calib.clicked.connect(self.open_calibration)
+        self.btn_calib.setFixedWidth(btn_fixed_width)
         self.btn_calib.setStyleSheet(f"QPushButton {{ background-color: #e74c3c; {btn_style_base} }} QPushButton:hover {{ background-color: #c0392b; }}")
 
         btn_capture = QPushButton("Capture Cube State")
         btn_capture.clicked.connect(self.open_capture)
+        btn_capture.setFixedWidth(btn_fixed_width)
         btn_capture.setStyleSheet(f"QPushButton {{ background-color: #f39c12; {btn_style_base} }} QPushButton:hover {{ background-color: #e67e22; }}")
 
         btn_kociemba = QPushButton("Calculate solution with Kociemba")
         btn_kociemba.clicked.connect(self.solve_kociemba)
+        btn_kociemba.setFixedWidth(btn_fixed_width)
         btn_kociemba.setStyleSheet(f"QPushButton {{ background-color: #3498db; {btn_style_base} }} QPushButton:hover {{ background-color: #2980b9; }}")
 
         btn_m2op = QPushButton("Calculate solution with M2/OP")
         btn_m2op.clicked.connect(self.solve_m2op)
+        btn_m2op.setFixedWidth(btn_fixed_width)
         btn_m2op.setStyleSheet(f"QPushButton {{ background-color: #3498db; {btn_style_base} }} QPushButton:hover {{ background-color: #2980b9; }}")
 
+        # ================= RESULT AREA CORRIGIDA =================
         self.result_area = QTextEdit()
         self.result_area.setReadOnly(True)
-        self.result_area.setMaximumHeight(180)
+        self.result_area.setMinimumWidth(350) 
+        # Removido o limite máximo de altura! Agora ele desce junto com o painel esquerdo
+        self.result_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.result_area.setFont(QFont("Arial", 10, QFont.Weight.Bold))
 
         btn_send_robot = QPushButton("Send Solve")
         btn_send_robot.clicked.connect(self.send_to_robot)
+        btn_send_robot.setFixedWidth(btn_fixed_width)
         btn_send_robot.setStyleSheet(f"QPushButton {{ background-color: #2ecc71; {btn_style_base} }} QPushButton:hover {{ background-color: #27ae60; }}")
 
         btn_send_inverted = QPushButton("Send Scramble (Reverse)")
         btn_send_inverted.clicked.connect(self.send_inverted_to_robot)
+        btn_send_inverted.setFixedWidth(btn_fixed_width)
         btn_send_inverted.setStyleSheet(f"QPushButton {{ background-color: #2ecc71; {btn_style_base} }} QPushButton:hover {{ background-color: #27ae60; }}")
 
         # ================= MANUAL =================
@@ -618,13 +628,16 @@ class CoverPage(QWidget):
         line_top.setFixedHeight(line_thickness)
         layout.addWidget(line_top)
 
+        # ================= SPLIT LAYOUT =================
+        split_layout = QHBoxLayout()
+        left_panel = QVBoxLayout()
+        right_panel = QVBoxLayout()
+
         # --- MIDDLE: Three Columns ---
         columns_layout = QHBoxLayout() 
-        
-        # Fonte para títulos das colunas (Média - 16)
         column_title_font = QFont("Arial", 16, QFont.Weight.Bold)
 
-        # Col 1: Calibration
+        # Col 1
         col1 = QVBoxLayout()
         lbl_col1 = QLabel("Calibration")
         lbl_col1.setFont(column_title_font)
@@ -635,14 +648,14 @@ class CoverPage(QWidget):
         col1.addStretch()
         columns_layout.addLayout(col1)
 
-        # Vertical line 1
+        # V-Line 1
         line_v1 = QFrame()
         line_v1.setFrameShape(QFrame.Shape.VLine)
         line_v1.setStyleSheet(line_style)
         line_v1.setFixedWidth(line_thickness)
         columns_layout.addWidget(line_v1)
 
-        # Col 2: Calculate Solution
+        # Col 2
         col2 = QVBoxLayout()
         lbl_col2 = QLabel("Calculate Solution")
         lbl_col2.setFont(column_title_font)
@@ -653,14 +666,14 @@ class CoverPage(QWidget):
         col2.addStretch()
         columns_layout.addLayout(col2)
 
-        # Vertical line 2
+        # V-Line 2
         line_v2 = QFrame()
         line_v2.setFrameShape(QFrame.Shape.VLine)
         line_v2.setStyleSheet(line_style)
         line_v2.setFixedWidth(line_thickness)
         columns_layout.addWidget(line_v2)
 
-        # Col 3: Send to Robot
+        # Col 3
         col3 = QVBoxLayout()
         lbl_col3 = QLabel("Send to Robot")
         lbl_col3.setFont(column_title_font)
@@ -671,32 +684,17 @@ class CoverPage(QWidget):
         col3.addStretch()
         columns_layout.addLayout(col3)
 
-        layout.addLayout(columns_layout)
+        left_panel.addLayout(columns_layout)
 
         # --- HORIZONTAL LINE 2 ---
         line_mid = QFrame()
         line_mid.setFrameShape(QFrame.Shape.HLine)
         line_mid.setStyleSheet(line_style)
         line_mid.setFixedHeight(line_thickness)
-        layout.addWidget(line_mid)
+        left_panel.addWidget(line_mid)
 
-        # --- RESULT AREA ---
-        lbl_result = QLabel("Result:")
-        lbl_result.setStyleSheet("font-weight: bold;")
-        layout.addWidget(lbl_result)
-        layout.addWidget(self.result_area)
-
-        # --- HORIZONTAL LINE 3 (Above Settings) ---
-        line_result_settings = QFrame()
-        line_result_settings.setFrameShape(QFrame.Shape.HLine)
-        line_result_settings.setStyleSheet(line_style)
-        line_result_settings.setFixedHeight(line_thickness)
-        layout.addWidget(line_result_settings)
-
-        # --- SETTINGS MATRIX 1x2 ---
+        # --- SETTINGS ---
         settings_matrix_layout = QHBoxLayout()
-        
-        # Speed Column
         matrix_col_speed = QVBoxLayout()
         lbl_speed = QLabel("Robot Speed")
         lbl_speed.setStyleSheet("font-weight: bold;")
@@ -704,7 +702,6 @@ class CoverPage(QWidget):
         matrix_col_speed.addWidget(self.speed_spin)
         settings_matrix_layout.addLayout(matrix_col_speed)
 
-        # Delay Column
         matrix_col_delay = QVBoxLayout()
         lbl_delay = QLabel("Delay Between Moves (ms)")
         lbl_delay.setStyleSheet("font-weight: bold;")
@@ -712,22 +709,45 @@ class CoverPage(QWidget):
         matrix_col_delay.addWidget(self.delay_spin)
         settings_matrix_layout.addLayout(matrix_col_delay)
 
-        layout.addLayout(settings_matrix_layout)
+        left_panel.addLayout(settings_matrix_layout)
 
-        # --- HORIZONTAL LINE 4 ---
+        # --- HORIZONTAL LINE 3 ---
         line_bot = QFrame()
         line_bot.setFrameShape(QFrame.Shape.HLine)
         line_bot.setStyleSheet(line_style)
         line_bot.setFixedHeight(line_thickness)
-        layout.addWidget(line_bot)
+        left_panel.addWidget(line_bot)
 
-        # --- BASE: Manual Sequence ---
+        # --- MANUAL ---
         lbl_manual = QLabel("Manual Sequence")
         lbl_manual.setStyleSheet("font-weight: bold;")
-        layout.addWidget(lbl_manual)
-        layout.addWidget(self.manual_input)
-        layout.addWidget(btn_send_manual)
+        left_panel.addWidget(lbl_manual)
+        left_panel.addWidget(self.manual_input)
+        left_panel.addWidget(btn_send_manual)
         
+        # REMOVIDO: left_panel.addStretch() para eliminar o buraco no final da página
+
+        # --- RESULT AREA ---
+        lbl_result = QLabel("Result:")
+        lbl_result.setStyleSheet("font-weight: bold;")
+        right_panel.addWidget(lbl_result)
+        right_panel.addWidget(self.result_area)
+        
+        # REMOVIDO: right_panel.addStretch() para a caixa colar perfeitamente com a base da página
+
+        # Montagem do layout divido
+        split_layout.addLayout(left_panel)
+        
+        line_v_split = QFrame()
+        line_v_split.setFrameShape(QFrame.Shape.VLine)
+        line_v_split.setStyleSheet(line_style)
+        line_v_split.setFixedWidth(line_thickness)
+        split_layout.addWidget(line_v_split)
+        
+        split_layout.addLayout(right_panel)
+
+        layout.addLayout(split_layout)
+
         self.setLayout(layout)
 
         # ================= SERIAL TIMER =================
@@ -735,9 +755,8 @@ class CoverPage(QWidget):
         self.serial_timer.timeout.connect(self.check_serial)
         self.serial_timer.start(50)  
 
-    # [MANTENHA TODAS AS SUAS FUNÇÕES ABAIXO INTACTAS: init_serial, check_serial, send_sequence_to_robot, etc.]
-    # (Use as funções da resposta anterior que já estavam traduzidas para inglês)
-
+    # ================= MÉTODOS =================
+    
     def init_serial(self):
         if self.arduino is None:
             try:
@@ -888,8 +907,6 @@ class CoverPage(QWidget):
             self.result_area.setText(text)
         except FileNotFoundError:
             self.result_area.setText("First capture the cube.")
-
-
 
 # ==========================================================
 # MAIN
