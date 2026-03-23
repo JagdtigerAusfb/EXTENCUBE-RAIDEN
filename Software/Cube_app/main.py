@@ -6,8 +6,9 @@ from PyQt6.QtWidgets import (
     QApplication, QWidget, QLabel,
     QPushButton, QVBoxLayout, QHBoxLayout,
     QSpinBox, QStackedWidget, QTextEdit,
-    QMessageBox, QLineEdit
-)
+    QMessageBox, QLineEdit, QFrame,)
+from PyQt6.QtGui import (QFont, QPixmap, QIcon)
+
 from PyQt6.QtGui import QImage, QPixmap, QFont
 from PyQt6.QtCore import QTimer, Qt
 
@@ -476,6 +477,7 @@ class CubeStateCapturePage(QWidget):
         else:
             self.update_label()
 
+
 # ==========================================================
 # COVER PAGE
 # ==========================================================
@@ -484,6 +486,14 @@ class CoverPage(QWidget):
     def __init__(self, stacked_widget):
         super().__init__()
         self.stacked_widget = stacked_widget
+        
+        # Aplica Negrito em toda a página por padrão
+        self.setStyleSheet("font-weight: bold;")
+
+        # ================= APP TITLE & ICON =================
+        self.window().setWindowTitle("Rubik’s Cube Robot Solver")
+        # Ensure QIcon is imported: from PyQt6.QtGui import QIcon
+        self.window().setWindowIcon(QIcon("logo_pro.jpg"))
 
         # ================= SERIAL =================
         self.arduino = None
@@ -493,7 +503,8 @@ class CoverPage(QWidget):
 
         # ================= UI =================
         title = QLabel("Rubik’s Cube Robot Solver")
-        title.setFont(QFont("Arial", 18))
+        # TÍTULO PRINCIPAL (MAIOR - 26)
+        title.setFont(QFont("Arial", 26, QFont.Weight.Bold))
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         logo_label = QLabel()
@@ -505,136 +516,60 @@ class CoverPage(QWidget):
                 Qt.TransformationMode.SmoothTransformation
             )
         )
-        logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        logo_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
         self.camera_spin = QSpinBox()
         self.camera_spin.setRange(0, 5)
         self.camera_spin.setValue(0)
+        self.camera_spin.setStyleSheet("font-weight: bold;")
 
         # ================= DISPLAY TIME =================
         self.time_display = QLabel("Time: -- s")
         self.time_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.time_display.setFont(QFont("Arial", 16, QFont.Weight.Bold))
+        self.time_display.setFixedHeight(160) 
         self.time_display.setStyleSheet("""
             QLabel {
                 background-color: #075915;
                 color: white;
                 border-radius: 10px;
                 padding: 10px;
+                font-weight: bold;
             }
         """)
 
-        # ================= Botons =================
-        self.btn_calib = QPushButton(f"Calibration")
+        # ================= Buttons =================
+        # Estilo comum para botões com texto em negrito
+        btn_style_base = "font-weight: bold; border-radius: 8px; padding: 10px; min-height: 40px; color: white;"
+
+        self.btn_calib = QPushButton("Calibration")
         self.btn_calib.clicked.connect(self.open_calibration)
-        self.btn_calib.setStyleSheet("""
-            QPushButton {
-                background-color: #e74c3c;
-                color: white;
-                font-weight: bold;
-                border-radius: 8px;
-                padding: 6px;
-            }
-            QPushButton:hover {
-                background-color: #c0392b;
-            }
-            QPushButton:pressed {
-                background-color: #922b21;
-            }
-        """)
+        self.btn_calib.setStyleSheet(f"QPushButton {{ background-color: #e74c3c; {btn_style_base} }} QPushButton:hover {{ background-color: #c0392b; }}")
 
         btn_capture = QPushButton("Capture Cube State")
         btn_capture.clicked.connect(self.open_capture)
-        btn_capture.setStyleSheet("""
-            QPushButton {
-                background-color: #f39c12;
-                color: white;
-                font-weight: bold;
-                border-radius: 8px;
-                padding: 6px;
-            }
-            QPushButton:hover {
-                background-color: #e67e22;
-            }
-            QPushButton:pressed {
-                background-color: #d35400;
-            }
-            """)
+        btn_capture.setStyleSheet(f"QPushButton {{ background-color: #f39c12; {btn_style_base} }} QPushButton:hover {{ background-color: #e67e22; }}")
 
         btn_kociemba = QPushButton("Calculate solution with Kociemba")
         btn_kociemba.clicked.connect(self.solve_kociemba)
-        btn_kociemba.setStyleSheet("""
-            QPushButton {
-                background-color: #3498db;
-                color: white;
-                font-weight: bold;
-                border-radius: 8px;
-                padding: 6px;
-            }
-            QPushButton:hover {
-                background-color: #2980b9;
-            }
-            QPushButton:pressed {
-                background-color: #1f618d;
-            }
-            """)
+        btn_kociemba.setStyleSheet(f"QPushButton {{ background-color: #3498db; {btn_style_base} }} QPushButton:hover {{ background-color: #2980b9; }}")
 
         btn_m2op = QPushButton("Calculate solution with M2/OP")
         btn_m2op.clicked.connect(self.solve_m2op)
-        btn_m2op.setStyleSheet("""
-            QPushButton {
-                background-color: #3498db;
-                color: white;
-                font-weight: bold;
-                border-radius: 8px;
-                padding: 6px;
-            }
-            QPushButton:hover {
-                background-color: #2980b9;
-            }
-            QPushButton:pressed {
-                background-color: #1f618d;
-            }
-            """)
+        btn_m2op.setStyleSheet(f"QPushButton {{ background-color: #3498db; {btn_style_base} }} QPushButton:hover {{ background-color: #2980b9; }}")
 
         self.result_area = QTextEdit()
         self.result_area.setReadOnly(True)
+        self.result_area.setMaximumHeight(180)
+        self.result_area.setFont(QFont("Arial", 10, QFont.Weight.Bold))
 
         btn_send_robot = QPushButton("Send Solve")
         btn_send_robot.clicked.connect(self.send_to_robot)
-        btn_send_robot.setStyleSheet("""
-            QPushButton {
-                background-color: #2ecc71;
-                color: white;
-                font-weight: bold;
-                border-radius: 8px;
-                padding: 6px;
-            }
-            QPushButton:hover {
-                background-color: #27ae60;
-            }
-            QPushButton:pressed {
-                background-color: #1e8449;
-            }
-            """)
+        btn_send_robot.setStyleSheet(f"QPushButton {{ background-color: #2ecc71; {btn_style_base} }} QPushButton:hover {{ background-color: #27ae60; }}")
 
         btn_send_inverted = QPushButton("Send Scramble (Reverse)")
         btn_send_inverted.clicked.connect(self.send_inverted_to_robot)
-        btn_send_inverted.setStyleSheet("""
-            QPushButton {
-                background-color: #2ecc71;
-                color: white;
-                font-weight: bold;
-                border-radius: 8px;
-                padding: 6px;
-            }
-            QPushButton:hover {
-                background-color: #27ae60;
-            }
-            QPushButton:pressed {
-                background-color: #1e8449;
-            }
-            """)
+        btn_send_inverted.setStyleSheet(f"QPushButton {{ background-color: #2ecc71; {btn_style_base} }} QPushButton:hover {{ background-color: #27ae60; }}")
 
         # ================= MANUAL =================
         self.manual_input = QLineEdit()
@@ -643,168 +578,225 @@ class CoverPage(QWidget):
                 background-color: #3498db;
                 color: white;
                 border-radius: 6px;
-                padding: 4px;
+                padding: 8px;
+                font-weight: bold;
             }""")
         btn_send_manual = QPushButton("Send Manual Sequence")
         btn_send_manual.clicked.connect(self.send_manual_sequence)
-        btn_send_manual.setStyleSheet("""
-            QPushButton {
-                background-color: #2ecc71;
-                color: white;
-                font-weight: bold;
-                border-radius: 8px;
-                padding: 6px;
-            }
-            QPushButton:hover {
-                background-color: #27ae60;
-            }
-            QPushButton:pressed {
-                background-color: #1e8449;
-            }
-            """)
+        btn_send_manual.setStyleSheet(f"QPushButton {{ background-color: #2ecc71; {btn_style_base} }} QPushButton:hover {{ background-color: #27ae60; }}")
 
         # ================= ROBOT SETTINGS =================
         self.speed_spin = QSpinBox()
         self.speed_spin.setRange(1, 10000)
         self.speed_spin.setValue(1000)
+        self.speed_spin.setStyleSheet("padding: 6px; font-weight: bold;")
 
         self.delay_spin = QSpinBox()
         self.delay_spin.setRange(0, 2000)
         self.delay_spin.setValue(10)
+        self.delay_spin.setStyleSheet("padding: 6px; font-weight: bold;")
 
         # ================= LAYOUT =================
         layout = QVBoxLayout()
         layout.addWidget(title)
-        layout.addWidget(logo_label)
+        
+        # --- TOP: Logo & Time ---
+        logo_time_layout = QHBoxLayout()
+        logo_time_layout.setAlignment(Qt.AlignmentFlag.AlignLeft) 
+        logo_time_layout.setSpacing(10)
+        logo_time_layout.addWidget(logo_label)
+        logo_time_layout.addWidget(self.time_display, stretch=1) 
+        layout.addLayout(logo_time_layout)
 
-        layout.addWidget(self.time_display)
+        line_style = "border: 1px solid rgba(255, 255, 255, 128); background-color: rgba(255, 255, 255, 128);"
+        line_thickness = 2 
 
-        layout.addWidget(self.btn_calib)
-        layout.addWidget(btn_capture)
-        layout.addWidget(btn_kociemba)
-        layout.addWidget(btn_m2op)
+        # --- HORIZONTAL LINE 1 ---
+        line_top = QFrame()
+        line_top.setFrameShape(QFrame.Shape.HLine)
+        line_top.setStyleSheet(line_style)
+        line_top.setFixedHeight(line_thickness)
+        layout.addWidget(line_top)
 
-        layout.addWidget(QLabel("<b>Result:</b>"))
+        # --- MIDDLE: Three Columns ---
+        columns_layout = QHBoxLayout() 
+        
+        # Fonte para títulos das colunas (Média - 16)
+        column_title_font = QFont("Arial", 16, QFont.Weight.Bold)
+
+        # Col 1: Calibration
+        col1 = QVBoxLayout()
+        lbl_col1 = QLabel("Calibration")
+        lbl_col1.setFont(column_title_font)
+        lbl_col1.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        col1.addWidget(lbl_col1)
+        col1.addWidget(self.btn_calib)
+        col1.addWidget(btn_capture)
+        col1.addStretch()
+        columns_layout.addLayout(col1)
+
+        # Vertical line 1
+        line_v1 = QFrame()
+        line_v1.setFrameShape(QFrame.Shape.VLine)
+        line_v1.setStyleSheet(line_style)
+        line_v1.setFixedWidth(line_thickness)
+        columns_layout.addWidget(line_v1)
+
+        # Col 2: Calculate Solution
+        col2 = QVBoxLayout()
+        lbl_col2 = QLabel("Calculate Solution")
+        lbl_col2.setFont(column_title_font)
+        lbl_col2.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        col2.addWidget(lbl_col2)
+        col2.addWidget(btn_kociemba)
+        col2.addWidget(btn_m2op)
+        col2.addStretch()
+        columns_layout.addLayout(col2)
+
+        # Vertical line 2
+        line_v2 = QFrame()
+        line_v2.setFrameShape(QFrame.Shape.VLine)
+        line_v2.setStyleSheet(line_style)
+        line_v2.setFixedWidth(line_thickness)
+        columns_layout.addWidget(line_v2)
+
+        # Col 3: Send to Robot
+        col3 = QVBoxLayout()
+        lbl_col3 = QLabel("Send to Robot")
+        lbl_col3.setFont(column_title_font)
+        lbl_col3.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        col3.addWidget(lbl_col3)
+        col3.addWidget(btn_send_robot)
+        col3.addWidget(btn_send_inverted)
+        col3.addStretch()
+        columns_layout.addLayout(col3)
+
+        layout.addLayout(columns_layout)
+
+        # --- HORIZONTAL LINE 2 ---
+        line_mid = QFrame()
+        line_mid.setFrameShape(QFrame.Shape.HLine)
+        line_mid.setStyleSheet(line_style)
+        line_mid.setFixedHeight(line_thickness)
+        layout.addWidget(line_mid)
+
+        # --- RESULT AREA ---
+        lbl_result = QLabel("Result:")
+        lbl_result.setStyleSheet("font-weight: bold;")
+        layout.addWidget(lbl_result)
         layout.addWidget(self.result_area)
 
-        layout.addWidget(QLabel("<b>Robot Speed</b>"))
-        layout.addWidget(self.speed_spin)
+        # --- HORIZONTAL LINE 3 (Above Settings) ---
+        line_result_settings = QFrame()
+        line_result_settings.setFrameShape(QFrame.Shape.HLine)
+        line_result_settings.setStyleSheet(line_style)
+        line_result_settings.setFixedHeight(line_thickness)
+        layout.addWidget(line_result_settings)
 
-        layout.addWidget(QLabel("<b>Delay Between Moves (ms)</b>"))
-        layout.addWidget(self.delay_spin)
+        # --- SETTINGS MATRIX 1x2 ---
+        settings_matrix_layout = QHBoxLayout()
+        
+        # Speed Column
+        matrix_col_speed = QVBoxLayout()
+        lbl_speed = QLabel("Robot Speed")
+        lbl_speed.setStyleSheet("font-weight: bold;")
+        matrix_col_speed.addWidget(lbl_speed)
+        matrix_col_speed.addWidget(self.speed_spin)
+        settings_matrix_layout.addLayout(matrix_col_speed)
 
-        layout.addWidget(btn_send_robot)
-        layout.addWidget(btn_send_inverted)
+        # Delay Column
+        matrix_col_delay = QVBoxLayout()
+        lbl_delay = QLabel("Delay Between Moves (ms)")
+        lbl_delay.setStyleSheet("font-weight: bold;")
+        matrix_col_delay.addWidget(lbl_delay)
+        matrix_col_delay.addWidget(self.delay_spin)
+        settings_matrix_layout.addLayout(matrix_col_delay)
 
-        layout.addWidget(QLabel("<b>Manual Sequence</b>"))
+        layout.addLayout(settings_matrix_layout)
+
+        # --- HORIZONTAL LINE 4 ---
+        line_bot = QFrame()
+        line_bot.setFrameShape(QFrame.Shape.HLine)
+        line_bot.setStyleSheet(line_style)
+        line_bot.setFixedHeight(line_thickness)
+        layout.addWidget(line_bot)
+
+        # --- BASE: Manual Sequence ---
+        lbl_manual = QLabel("Manual Sequence")
+        lbl_manual.setStyleSheet("font-weight: bold;")
+        layout.addWidget(lbl_manual)
         layout.addWidget(self.manual_input)
         layout.addWidget(btn_send_manual)
-
-        layout.addStretch()
-
+        
         self.setLayout(layout)
 
-        # ================= TIMER SERIAL =================
+        # ================= SERIAL TIMER =================
         self.serial_timer = QTimer()
         self.serial_timer.timeout.connect(self.check_serial)
-        self.serial_timer.start(50)  # checa a cada 50ms
+        self.serial_timer.start(50)  
 
-    # =====================================================
-    # SERIAL INIT
-    # =====================================================
+    # [MANTENHA TODAS AS SUAS FUNÇÕES ABAIXO INTACTAS: init_serial, check_serial, send_sequence_to_robot, etc.]
+    # (Use as funções da resposta anterior que já estavam traduzidas para inglês)
 
     def init_serial(self):
         if self.arduino is None:
             try:
                 self.arduino = serial.Serial(self.serial_port, self.baudrate, timeout=1)
                 time.sleep(2)
-                print("Serial conectada!")
+                print("Serial Connected!")
             except Exception as e:
                 QMessageBox.warning(self, "Serial Error", str(e))
                 self.arduino = None
 
-    # =====================================================
-    # SERIAL
-    # =====================================================
-
     def check_serial(self):
         if self.arduino and self.arduino.in_waiting:
             response = self.arduino.readline().decode().strip()
-
-            print("Arduino:", response)
-
             if response.startswith("DONE"):
                 try:
                     tempo = response.split()[1]
-                    self.time_display.setText(f"Tempo: {tempo} s")
+                    self.time_display.setText(f"Time: {tempo} s")
                 except:
-                    self.time_display.setText("Tempo: erro")
-
+                    self.time_display.setText("Time: Error")
                 self.busy = False  
 
-    # =====================================================
-    # SEND FUNCTION
-    # =====================================================
-
     def send_sequence_to_robot(self, sequence):
-
         if not sequence:
             QMessageBox.warning(self, "Error", "Sequence is empty.")
             return
-
         if self.busy:
             QMessageBox.information(self, "Robot Busy", "Wait until current execution finishes.")
             return
-
         self.init_serial()
         if self.arduino is None:
             return
-
         speed = self.speed_spin.value()
         delay = self.delay_spin.value()
-
         try:
             self.busy = True
-            self.time_display.setText("Executando...")
-
+            self.time_display.setText("Executing...")
             self.arduino.reset_input_buffer()
-
             self.arduino.write(b"<START>\n")
             self.arduino.write(f"<SPEED:{speed}>\n".encode())
             self.arduino.write(f"<DELAY:{delay}>\n".encode())
-
             for move in sequence:
                 self.arduino.write((move + "\n").encode())
                 time.sleep(0.005)
-
             self.arduino.write(b"<END>\n")
-
         except Exception as e:
             QMessageBox.warning(self, "Serial Error", str(e))
             self.busy = False
 
-    # =====================================================
-    # MANUAL
-    # =====================================================
-
     def send_manual_sequence(self):
         raw_sequence = self.manual_input.text().strip()
-
         if not raw_sequence:
             QMessageBox.warning(self, "Error", "Manual sequence is empty.")
             return
-
         try:
             converted = self.converter_movimentos(raw_sequence)
         except ValueError as e:
             QMessageBox.warning(self, "Error", str(e))
             return
-
         self.send_sequence_to_robot(converted)
-
-    # =====================================================
-    # CONVERTER
-    # =====================================================
 
     def converter_movimentos(self, seq):
         tabela = {
@@ -815,81 +807,54 @@ class CoverPage(QWidget):
             "L": "M", "L'": "N", "L2": "O",
             "B": "P", "B'": "Q", "B2": "R"
         }
-
         try:
             return "".join(tabela[m] for m in seq.split())
         except KeyError as e:
-            raise ValueError(f"Movimento inválido: {e}")
-
-    # =====================================================
-    # SEND SOLVE
-    # =====================================================
+            raise ValueError(f"Invalid move: {e}")
 
     def send_to_robot(self):
-
         text = self.result_area.toPlainText()
-
         if "SEQUENCE FOR THE ROBOT" not in text:
             QMessageBox.warning(self, "Error", "No robot sequence found.")
             return
-
         try:
             part = text.split("===== SEQUENCE FOR THE ROBOT =====")[1]
             robot_sequence = part.split("===== INVERTED SEQUENCE =====")[0].strip()
         except:
             QMessageBox.warning(self, "Error", "Could not parse robot sequence.")
             return
-
         self.send_sequence_to_robot(robot_sequence)
 
-    # =====================================================
-    # SEND INVERTED
-    # =====================================================
-
     def send_inverted_to_robot(self):
-
         text = self.result_area.toPlainText()
-
         if "INVERTED SEQUENCE" not in text:
             QMessageBox.warning(self, "Error", "No inverted sequence found.")
             return
-
         try:
             part = text.split("===== INVERTED SEQUENCE =====")[1]
             inverted_sequence = part.strip()
         except:
             QMessageBox.warning(self, "Error", "Could not parse inverted sequence.")
             return
-
         self.send_sequence_to_robot(inverted_sequence)
-
-    # =====================================================
-    # EXISTENTES
-    # =====================================================
 
     def open_calibration(self):
         self.stacked_widget.camera_index = self.camera_spin.value()
         self.stacked_widget.setCurrentIndex(1)
-        self.stacked_widget.calibration_page.start_camera(
-            self.stacked_widget.camera_index
-        )
+        self.stacked_widget.calibration_page.start_camera(self.stacked_widget.camera_index)
 
     def open_capture(self):
         self.stacked_widget.camera_index = self.camera_spin.value()
         self.stacked_widget.setCurrentIndex(3)
         self.stacked_widget.cube_page.load_data()
-        self.stacked_widget.cube_page.start_camera(
-            self.stacked_widget.camera_index
-        )
+        self.stacked_widget.cube_page.start_camera(self.stacked_widget.camera_index)
 
     def solve_kociemba(self):
         try:
             result = solve_from_file("cube_state.json")
-
             if "error" in result:
-                self.result_area.setText(f"Erro:\n{result['error']}")
+                self.result_area.setText(f"Error:\n{result['error']}")
                 return
-
             text = (
                 "===== SOLUTION (KOCIEMBA) =====\n\n"
                 f"{result['solution']}\n\n"
@@ -900,20 +865,16 @@ class CoverPage(QWidget):
                 "===== INVERTED SEQUENCE =====\n\n"
                 f"{result['inverted_sequence']}"
             )
-
             self.result_area.setText(text)
-
         except FileNotFoundError:
             self.result_area.setText("First capture the cube.")
 
     def solve_m2op(self):
         try:
             result = solve_from_file_2("cube_state.json")
-
             if "error" in result:
-                self.result_area.setText(f"Erro:\n{result['error']}")
+                self.result_area.setText(f"Error:\n{result['error']}")
                 return
-
             text = (
                 "===== SOLUTION (M2/OP) =====\n\n"
                 f"{result['solution']}\n\n"
@@ -924,11 +885,10 @@ class CoverPage(QWidget):
                 "===== INVERTED SEQUENCE =====\n\n"
                 f"{result['inverted_sequence']}"
             )
-
             self.result_area.setText(text)
-
         except FileNotFoundError:
             self.result_area.setText("First capture the cube.")
+
 
 
 # ==========================================================

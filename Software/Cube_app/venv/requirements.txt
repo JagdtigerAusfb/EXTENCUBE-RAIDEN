@@ -1,5 +1,0 @@
-opencv-python
-PyQt6
-numpy
-kociemba
-pyserial
