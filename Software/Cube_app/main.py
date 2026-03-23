@@ -6,16 +6,16 @@ from PyQt6.QtWidgets import (
     QApplication, QWidget, QLabel,
     QPushButton, QVBoxLayout, QHBoxLayout,
     QSpinBox, QStackedWidget, QTextEdit,
-    QMessageBox, QLineEdit, QFrame, QSizePolicy)
-from PyQt6.QtGui import (QFont, QPixmap, QIcon)
-
-from PyQt6.QtGui import QImage, QPixmap, QFont
+    QMessageBox, QLineEdit, QFrame, QSizePolicy, QComboBox
+)
+from PyQt6.QtGui import (QFont, QPixmap, QIcon, QImage)
 from PyQt6.QtCore import QTimer, Qt
 
 from kociemba_solver import solve_from_file
 from m2op_solver import solve_from_file_2
 
 import serial
+import serial.tools.list_ports
 import time
 
 # ==========================================================
@@ -39,7 +39,6 @@ COLOR_TO_FACE = {
 
 def euclidean(a, b):
     return np.linalg.norm(np.array(a) - np.array(b))
-
 
 def classify(mean_hsv, mean_lab, mean_rgb, colors_ref_roi):
     W_HSV = 0.4
@@ -134,8 +133,7 @@ class CalibrationPage(QWidget):
 
         # ================= MAIN LAYOUT =================
         layout = QVBoxLayout()
-
-        layout.setSpacing(6)             
+        layout.setSpacing(6)        
         layout.setContentsMargins(8, 8, 8, 8)  
 
         layout.addLayout(camera_layout)
@@ -144,14 +142,9 @@ class CalibrationPage(QWidget):
         layout.addLayout(settings)
         layout.addWidget(btn_save)
         layout.addWidget(btn_back)
-
         layout.addStretch(0) 
 
         self.setLayout(layout)
-
-    # =====================================================
-    # CAMERA CONTROL
-    # =====================================================
 
     def start_camera(self, cam_index):
         self.stop_camera()
@@ -172,10 +165,6 @@ class CalibrationPage(QWidget):
         )
         self.start_camera(value)
 
-    # =====================================================
-    # ROI CONTROL
-    # =====================================================
-
     def move(self, dx, dy):
         self.center_x += dx
         self.center_y += dy
@@ -191,76 +180,37 @@ class CalibrationPage(QWidget):
                 x = start_x + col * (self.roi_size + self.gap)
                 y = start_y + row * (self.roi_size + self.gap)
 
-                cv2.rectangle(
-                    frame,
-                    (x, y),
-                    (x + self.roi_size, y + self.roi_size),
-                    (0, 255, 0),
-                    2
-                )
-
-                rois.append({
-                    "x": x,
-                    "y": y,
-                    "size": self.roi_size
-                })
+                cv2.rectangle(frame, (x, y), (x + self.roi_size, y + self.roi_size), (0, 255, 0), 2)
+                rois.append({"x": x, "y": y, "size": self.roi_size})
 
         return frame, rois
-
-    # =====================================================
-    # SAVE
-    # =====================================================
 
     def save_rois(self):
         if self.current_frame is None:
             return
 
         _, rois = self.draw_grid(self.current_frame.copy())
-
         with open("rois.json", "w") as f:
             json.dump(rois, f, indent=4)
 
         self.stop_camera()
-
         self.stacked_widget.color_page.load_rois(rois)
         self.stacked_widget.setCurrentIndex(2)
-        self.stacked_widget.color_page.start_camera(
-            self.stacked_widget.camera_index
-        )
-
-    # =====================================================
-    # FRAME UPDATE
-    # =====================================================
+        self.stacked_widget.color_page.start_camera(self.stacked_widget.camera_index)
 
     def update_frame(self):
         if not self.cap:
             return
-
         ret, frame = self.cap.read()
         if not ret:
             return
-
         frame = cv2.flip(frame, 1)
         self.current_frame = frame.copy()
-
         frame, _ = self.draw_grid(frame)
-
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb.shape
-
-        qt = QImage(
-            rgb.data,
-            w,
-            h,
-            ch * w,
-            QImage.Format.Format_RGB888
-        )
-
+        qt = QImage(rgb.data, w, h, ch * w, QImage.Format.Format_RGB888)
         self.image_label.setPixmap(QPixmap.fromImage(qt))
-
-    # =====================================================
-    # BACK
-    # =====================================================
 
     def go_home(self):
         self.stop_camera()
@@ -428,13 +378,8 @@ class CubeStateCapturePage(QWidget):
         self.image_label.setPixmap(QPixmap.fromImage(qt))
 
     def capture_face(self):
-
         face_string = ""
-
-        sorted_rois = sorted(
-            self.rois,
-            key=lambda r: (r["y"], -r["x"])
-        )
+        sorted_rois = sorted(self.rois, key=lambda r: (r["y"], -r["x"]))
 
         for roi in sorted_rois:
             x, y, s = roi["x"], roi["y"], roi["size"]
@@ -451,29 +396,19 @@ class CubeStateCapturePage(QWidget):
             roi_key = f"roi_{roi_id}"
 
             color_name = classify(
-                mean_hsv,
-                mean_lab,
-                mean_rgb,
-                self.colors_ref[roi_key]
+                mean_hsv, mean_lab, mean_rgb, self.colors_ref[roi_key]
             )
-
             face_string += COLOR_TO_FACE[color_name]
 
         self.cube_string += face_string
         self.face_index += 1
 
         if self.face_index == 6:
-
             with open("cube_state.json", "w") as f:
-                json.dump({
-                    "cube_string": self.cube_string
-                }, f, indent=4)
-
+                json.dump({"cube_string": self.cube_string}, f, indent=4)
             QMessageBox.information(self, "Success", "Cube state saved!")
-
             self.stop_camera()
             self.stacked_widget.setCurrentIndex(0)
-
         else:
             self.update_label()
 
@@ -485,19 +420,15 @@ class CoverPage(QWidget):
     def __init__(self, stacked_widget):
         super().__init__()
         self.stacked_widget = stacked_widget
-        
-        # Aplica Negrito em toda a página por padrão
         self.setStyleSheet("font-weight: bold;")
 
         # ================= SERIAL =================
         self.arduino = None
-        self.serial_port = "COM4"
         self.baudrate = 9600
         self.busy = False  
 
         # ================= UI =================
         title = QLabel("Rubik’s Cube Robot Solver")
-        # TÍTULO PRINCIPAL (MAIOR - 26)
         title.setFont(QFont("Arial", 26, QFont.Weight.Bold))
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -520,11 +451,11 @@ class CoverPage(QWidget):
         # ================= DISPLAY TIME =================
         self.time_display = QLabel("Time: -- s")
         self.time_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.time_display.setFont(QFont("Arial", 16, QFont.Weight.Bold))
+        self.time_display.setFont(QFont("Arial", 58, QFont.Weight.Bold))
         self.time_display.setFixedHeight(160) 
         self.time_display.setStyleSheet("""
             QLabel {
-                background-color: #075915;
+                background-color: #4A6D70;
                 color: white;
                 border-radius: 10px;
                 padding: 10px;
@@ -533,10 +464,9 @@ class CoverPage(QWidget):
         """)
 
         # ================= Buttons =================
-        btn_style_base = "font-weight: bold; border-radius: 8px; padding: 10px; min-height: 40px; color: white;"
+        btn_style_base = "font-size: 16px; font-weight: bold; border-radius: 8px; padding: 10px; min-height: 40px; color: white;"
         btn_fixed_width = 280  
         
-        # Política para fazer os botões expandirem verticalmente
         btn_size_policy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
 
         self.btn_calib = QPushButton("Calibration")
@@ -586,7 +516,7 @@ class CoverPage(QWidget):
         self.manual_input = QLineEdit()
         self.manual_input.setStyleSheet("""
             QLineEdit {
-                background-color: #3498db;
+                background-color: #6527F5;
                 color: white;
                 border-radius: 6px;
                 padding: 8px;
@@ -594,24 +524,58 @@ class CoverPage(QWidget):
             }""")
         btn_send_manual = QPushButton("Send Manual Sequence")
         btn_send_manual.clicked.connect(self.send_manual_sequence)
-        btn_send_manual.setStyleSheet(f"QPushButton {{ background-color: #2ecc71; {btn_style_base} }} QPushButton:hover {{ background-color: #27ae60; }}")
+        btn_send_manual.setStyleSheet(f"QPushButton {{ background-color: #B027F5; {btn_style_base} }} QPushButton:hover {{ background-color: #27ae60; }}")
 
         # ================= ROBOT SETTINGS =================
+        self.port_combo = QComboBox()
+        # Estilo para deixar o fundo da lista preto e o texto branco
+        self.port_combo.setStyleSheet("""
+            QComboBox {
+                padding: 6px; 
+                font-weight: bold;
+            }
+            QComboBox QAbstractItemView {
+                background-color: black;
+                color: white;
+                selection-background-color: #3498db;
+            }
+        """)
+        
+        # Se você adicionou o botão de refresh na etapa anterior, mantenha ele aqui
+        self.btn_refresh_ports = QPushButton("↻ Refresh")
+        self.btn_refresh_ports.setStyleSheet("padding: 6px; font-weight: bold; background-color: #95a5a6; color: white; border-radius: 4px;")
+        self.btn_refresh_ports.clicked.connect(self.atualizar_portas)
+
+        self.atualizar_portas() 
+
+        # Estilo para alargar os botões das setas (up/down)
+        spinbox_style = """
+            QSpinBox {
+                padding: 6px; 
+                font-weight: bold;
+            }
+            QSpinBox::up-button {
+                width: 35px; /* Deixa o botão de cima mais largo */
+            }
+            QSpinBox::down-button {
+                width: 35px; /* Deixa o botão de baixo mais largo */
+            }
+        """
+
         self.speed_spin = QSpinBox()
         self.speed_spin.setRange(1, 10000)
         self.speed_spin.setValue(1000)
-        self.speed_spin.setStyleSheet("padding: 6px; font-weight: bold;")
+        self.speed_spin.setStyleSheet(spinbox_style)
 
         self.delay_spin = QSpinBox()
         self.delay_spin.setRange(0, 2000)
         self.delay_spin.setValue(10)
-        self.delay_spin.setStyleSheet("padding: 6px; font-weight: bold;")
+        self.delay_spin.setStyleSheet(spinbox_style)
 
         # ================= LAYOUT =================
         layout = QVBoxLayout()
         layout.addWidget(title)
         
-        # --- TOP: Logo & Time ---
         logo_time_layout = QHBoxLayout()
         logo_time_layout.setAlignment(Qt.AlignmentFlag.AlignLeft) 
         logo_time_layout.setSpacing(10)
@@ -622,19 +586,16 @@ class CoverPage(QWidget):
         line_style = "border: 1px solid rgba(255, 255, 255, 128); background-color: rgba(255, 255, 255, 128);"
         line_thickness = 2 
 
-        # --- HORIZONTAL LINE 1 ---
         line_top = QFrame()
         line_top.setFrameShape(QFrame.Shape.HLine)
         line_top.setStyleSheet(line_style)
         line_top.setFixedHeight(line_thickness)
         layout.addWidget(line_top)
 
-        # ================= SPLIT LAYOUT =================
         split_layout = QHBoxLayout()
         left_panel = QVBoxLayout()
         right_panel = QVBoxLayout()
 
-        # --- MIDDLE: Three Columns ---
         columns_layout = QHBoxLayout() 
         column_title_font = QFont("Arial", 16, QFont.Weight.Bold)
 
@@ -648,7 +609,6 @@ class CoverPage(QWidget):
         col1.addWidget(btn_capture)
         columns_layout.addLayout(col1)
 
-        # V-Line 1
         line_v1 = QFrame()
         line_v1.setFrameShape(QFrame.Shape.VLine)
         line_v1.setStyleSheet(line_style)
@@ -665,7 +625,6 @@ class CoverPage(QWidget):
         col2.addWidget(btn_m2op)
         columns_layout.addLayout(col2)
 
-        # V-Line 2
         line_v2 = QFrame()
         line_v2.setFrameShape(QFrame.Shape.VLine)
         line_v2.setStyleSheet(line_style)
@@ -684,7 +643,6 @@ class CoverPage(QWidget):
 
         left_panel.addLayout(columns_layout)
 
-        # --- HORIZONTAL LINE 2 ---
         line_mid = QFrame()
         line_mid.setFrameShape(QFrame.Shape.HLine)
         line_mid.setStyleSheet(line_style)
@@ -693,6 +651,14 @@ class CoverPage(QWidget):
 
         # --- SETTINGS ---
         settings_matrix_layout = QHBoxLayout()
+        
+        matrix_col_port = QVBoxLayout()
+        lbl_port = QLabel("Serial Port")
+        lbl_port.setStyleSheet("font-weight: bold;")
+        matrix_col_port.addWidget(lbl_port)
+        matrix_col_port.addWidget(self.port_combo)
+        settings_matrix_layout.addLayout(matrix_col_port)
+
         matrix_col_speed = QVBoxLayout()
         lbl_speed = QLabel("Robot Speed")
         lbl_speed.setStyleSheet("font-weight: bold;")
@@ -709,7 +675,6 @@ class CoverPage(QWidget):
 
         left_panel.addLayout(settings_matrix_layout)
 
-        # --- HORIZONTAL LINE 3 ---
         line_bot = QFrame()
         line_bot.setFrameShape(QFrame.Shape.HLine)
         line_bot.setStyleSheet(line_style)
@@ -729,7 +694,6 @@ class CoverPage(QWidget):
         right_panel.addWidget(lbl_result)
         right_panel.addWidget(self.result_area)
         
-        # Montagem do layout divido
         split_layout.addLayout(left_panel)
         
         line_v_split = QFrame()
@@ -744,21 +708,43 @@ class CoverPage(QWidget):
 
         self.setLayout(layout)
 
-        # ================= SERIAL TIMER =================
         self.serial_timer = QTimer()
         self.serial_timer.timeout.connect(self.check_serial)
         self.serial_timer.start(50)  
 
     # ================= MÉTODOS =================
     
+    def atualizar_portas(self):
+        self.port_combo.clear()
+        portas = serial.tools.list_ports.comports()
+        for porta in portas:
+            self.port_combo.addItem(porta.device)
+
     def init_serial(self):
         if self.arduino is None:
+            porta_selecionada = self.port_combo.currentText()
+            if not porta_selecionada:
+                QMessageBox.warning(self, "Error", "No COM port detected or selected!")
+                return
+
             try:
-                self.arduino = serial.Serial(self.serial_port, self.baudrate, timeout=1)
-                time.sleep(2)
-                print("Serial Connected!")
+                # Instanciamos a porta sem a abrir imediatamente
+                self.arduino = serial.Serial()
+                self.arduino.port = porta_selecionada
+                self.arduino.baudrate = self.baudrate
+                self.arduino.timeout = 1
+                
+                # Desativa o DTR para evitar o reset do Arduino!
+                self.arduino.setDTR(False) 
+                self.arduino.open()
+                
+
+                time.sleep(3)   #Não deixe esse tempo abaixo de 3s
+
+
+                print(f"Serial Connected to {porta_selecionada}!")
             except Exception as e:
-                QMessageBox.warning(self, "Serial Error", str(e))
+                QMessageBox.warning(self, "Serial Error", f"Failed to connect to {porta_selecionada}:\n{str(e)}")
                 self.arduino = None
 
     def check_serial(self):
@@ -787,7 +773,10 @@ class CoverPage(QWidget):
         try:
             self.busy = True
             self.time_display.setText("Executing...")
+            
             self.arduino.reset_input_buffer()
+            self.arduino.reset_output_buffer()
+
             self.arduino.write(b"<START>\n")
             self.arduino.write(f"<SPEED:{speed}>\n".encode())
             self.arduino.write(f"<DELAY:{delay}>\n".encode())
@@ -798,6 +787,7 @@ class CoverPage(QWidget):
         except Exception as e:
             QMessageBox.warning(self, "Serial Error", str(e))
             self.busy = False
+
 
     def send_manual_sequence(self):
         raw_sequence = self.manual_input.text().strip()
@@ -922,7 +912,6 @@ class MainApp(QStackedWidget):
         self.addWidget(self.color_page)        
         self.addWidget(self.cube_page)         
 
-    # CLOSE SERIAL 
     def closeEvent(self, event):
         try:
             if self.cover_page.arduino:
@@ -932,15 +921,14 @@ class MainApp(QStackedWidget):
             pass
         event.accept()
 
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainApp()
     
-    # ================= APP TITLE & ICON =================
+    # TÍTULO E ÍCONE DEFINIDOS AQUI!
     window.setWindowTitle("Rubik’s Cube Robot Solver")
     window.setWindowIcon(QIcon("logo_pro.jpg"))
-
+    
     window.resize(900, 750)
     window.show()
     sys.exit(app.exec())
