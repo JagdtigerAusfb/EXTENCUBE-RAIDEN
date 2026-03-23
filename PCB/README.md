@@ -1,11 +1,27 @@
-This directory contain the files for the Printed Circuit Boards (PCB) used in this project.
+# PCB Design Files
 
-If you are a beggniner, we recommend you use `KiCad` if you wish to open and edit this files, as it is free.
+This directory contains all the Printed Circuit Board (PCB) files required for this project. 
 
-## How to open the files
+If you are a beginner, we highly recommend using [KiCad](https://www.kicad.org/) (which is free and open-source) to open and edit these files.
 
-The `.sch` files contain the schematics of the circuit. While the `.pcb` file contain the desing for the PCB it self. Opening the `.pro` file will open both this files at the same time in a KiCad project. This are the only files you need to open and edit the project. All other files are for the prodution of the PCB.
+## How to Open and Edit
 
-## How to produce the PCB
+To view or modify the project, you only need to use with the files:
 
-The .gbr files are prodution files for the PCB. Each file correpond to a layer of the board and if you wish to have it manufactured, you must send all of them to your shop of choice. Along with this files, the .asdasdas are the files that dictate the holes in the board, you must also send this files if you dont want to manually make the holes (why would you want that). Make a Zip file with all this files and that's it.
+* **`.pro` / `.kicad_pro`:** The main KiCad project file. Opening this will automatically link and open both the schematic and the board layout.
+* **`.sch` / `.kicad_sch`:** Contains the electronic schematics of the circuit.
+* **`.pcb` / `.kicad_pcb`:** Contains the physical design and layout of the PCB.
+
+> **Note:** These are the only files you need to open to edit the project. All other files in this directory are generated for production purposes.
+
+## How to Manufacture the PCB
+
+If you want to have this board manufactured by a PCB fabrication house, you will need to send them the production files.
+
+* **`.gbr` (Gerber Files):** These are the production files. Each file corresponds to a specific physical layer of the board (copper, silkscreen, solder mask, etc.).
+* **`.drl` (Drill Files):** These files dictate the exact locations and sizes of the holes to be drilled in the board. You must include these unless you plan on drilling the holes manually (which we definitely don't recommend!).
+
+**How to order:**
+1. Select all the `.gbr` and `.drl` files.
+2. Compress them into a single `.zip` file.
+3. Upload the `.zip` file to your PCB manufacturer of choice (e.g., JLCPCB, PCBWay, OSH Park).
