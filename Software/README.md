@@ -2,6 +2,10 @@
 
 This files contain the code for all software required to run the robot. The code is divided in four main files: `main.py`, where the main code along with the UI elements and logic is. `kociemba.py` and `m2op.py` contain the code for the solving algothirms of the cube. And finally, `arduino.ino` contains the code for the arduino. Note that the code is not automatically writen in the arduino, you must do that manualy.
 
+## Credits & Acknowledgements
+Special thanks to the open-source Python implementation:
+* [**muodov/kociemba**](https://github.com/muodov/kociemba) - Python module for the Kociemba algorithm.
+
 ### Required Software
 * **Arduino IDE** (or similar IDE for Arduinos)
 * **Python 3.x**
