@@ -190,7 +190,7 @@ class CalibrationPage(QWidget):
             return
 
         _, rois = self.draw_grid(self.current_frame.copy())
-        with open("rois.json", "w") as f:
+        with open("Software\Cube_app\rois.json", "w") as f:
             json.dump(rois, f, indent=4)
 
         self.stop_camera()
@@ -305,7 +305,7 @@ class ColorCalibrationPage(QWidget):
         self.color_index += 1
 
         if self.color_index == len(COLOR_ORDER):
-            with open("colors.json", "w") as f:
+            with open("Software\Cube_app\colors.json", "w") as f:
                 json.dump(self.results, f, indent=4)
             self.stop_camera()
             self.stacked_widget.setCurrentIndex(0)
@@ -340,9 +340,9 @@ class CubeStateCapturePage(QWidget):
         self.setLayout(layout)
 
     def load_data(self):
-        with open("rois.json") as f:
+        with open("Software\Cube_app\rois.json") as f:
             self.rois = json.load(f)
-        with open("colors.json") as f:
+        with open("Software\Cube_app\colors.json") as f:
             self.colors_ref = json.load(f)
 
         self.face_index = 0
@@ -404,7 +404,7 @@ class CubeStateCapturePage(QWidget):
         self.face_index += 1
 
         if self.face_index == 6:
-            with open("cube_state.json", "w") as f:
+            with open("Software\Cube_app\cube_state.json", "w") as f:
                 json.dump({"cube_string": self.cube_string}, f, indent=4)
             QMessageBox.information(self, "Success", "Cube state saved!")
             self.stop_camera()
@@ -433,7 +433,7 @@ class CoverPage(QWidget):
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         logo_label = QLabel()
-        pixmap = QPixmap("logo_pro.jpg")
+        pixmap = QPixmap("Software\Cube_app\logo_pro.jpg")
         logo_label.setPixmap(
             pixmap.scaled(
                 180, 160,
@@ -854,7 +854,7 @@ class CoverPage(QWidget):
 
     def solve_kociemba(self):
         try:
-            result = solve_from_file("cube_state.json")
+            result = solve_from_file("Software\Cube_app\cube_state.json")
             if "error" in result:
                 self.result_area.setText(f"Error:\n{result['error']}")
                 return
@@ -874,7 +874,7 @@ class CoverPage(QWidget):
 
     def solve_m2op(self):
         try:
-            result = solve_from_file_2("cube_state.json")
+            result = solve_from_file_2("Software\Cube_app\cube_state.json")
             if "error" in result:
                 self.result_area.setText(f"Error:\n{result['error']}")
                 return
@@ -927,7 +927,7 @@ if __name__ == "__main__":
     
     # TÍTULO E ÍCONE DEFINIDOS AQUI!
     window.setWindowTitle("Rubik’s Cube Robot Solver")
-    window.setWindowIcon(QIcon("logo_pro.jpg"))
+    window.setWindowIcon(QIcon("Software\Cube_app\logo_pro.jpg"))
     
     window.resize(900, 750)
     window.show()
