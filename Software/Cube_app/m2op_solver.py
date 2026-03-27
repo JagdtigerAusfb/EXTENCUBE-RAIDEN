@@ -1,5 +1,4 @@
 import json
-import concurrent.futures
 
 def count_moves(solution_str):
     if not solution_str.strip():
@@ -43,36 +42,20 @@ def solve_from_file_2(json_path="cube_state.json"):
         # FUNÇÃO INTERNA QUE EXECUTA O SOLVER
         # ==================================================
 
-        def solver_task():
+        def solver_m2op():
+            # Validação do cubestring
+            for face in "URFDLB":
+                if state.count(face) != 9:
+                    return {"error": "Error. Probably cubestring is invalid"}
 
             #####################
             #   LEITURA EDGES   #
             #####################
 
             def certas_flips_edges(edges_list, map_edges_list):
-                """
-                Detecta edges corretas (certas) e edges flipadas (flips).
-
-                Parâmetros:
-                - edges_list: lista das 24 letras representando o sticker atualmente presente
-                            nas posições de edges extraídas do estado do cubo.
-                - map_edges_list: tabela que mapeia cada notação de aresta (por ex. 'UB') para
-                                os índices na lista de stickers (par de indices).
-
-                Retorna:
-                - certas: lista de strings representando edges "certas" (inclui a permutação
-                        do par, p.ex. "UB" e "BU" para marcar ambos os orientações possíveis).
-                - flips: lista de strings representando as edges detectadas como flipadas.
-                - counter: contador de quantas peças ainda faltam.
-                """
-                counter = 11          # contador inicial
-                flips = []            # lista de edges que precisam ser marcadas como flip
-                certas = []           # lista de edges que estão corretas
-
-                # Abaixo há uma longa sequência de testes, cada bloco testa uma aresta específica:
-                # - concatena os dois stickers correspondentes (pela tabela map_edges_list)
-                # - compara com a forma esperada (ex: "UB" ou "BU")
-                # - atualiza counter, certas ou flips conforme o caso.
+                counter = 11         
+                flips = []            
+                certas = []           
 
                 # Testa posição UB / BU
                 if edges_list[map_edges_list[0][1][0]] + edges_list[map_edges_list[0][1][1]] == "UB":
@@ -186,20 +169,6 @@ def solve_from_file_2(json_path="cube_state.json"):
 
 
             def test_buffer_1(piece, certas, flips, solved_edges_list):
-                """
-                Garante que o buffer escolhido represente uma peça errada (ou seja,
-                que o buffer não esteja entre as 'certas' já detectadas).
-
-                Parâmetros:
-                - piece: string representando a peça proposta como buffer.
-                - certas, flips: listas retornadas por certas_flips_edges.
-                - solved_edges_list: lista de pares [nome_aresta, letra] que mapeia edges para letras.
-
-                Retorna:
-                - piece: string substituta caso a original esteja em 'certas' ou 'flips'.
-                A função incrementa um índice internamente (inc) de 0,2,4,... e recupera a
-                nova proposta de buffer a partir de solved_edges_list[inc][0].
-                """
                 ready = False
                 inc = -2
                 flips_true = [f for pair in flips for f in (pair, pair[::-1])]
@@ -214,17 +183,6 @@ def solve_from_file_2(json_path="cube_state.json"):
 
 
             def adicionar_flips_1(flips, solved_edges_list, hist_edges):
-                """
-                Quando detectamos edges flipadas (flips), precisamos adicionar as letras
-                correspondentes à história. Esta função percorre a lista 'flips' e, para cada
-                peça flipada, localiza a letra correspondente em solved_edges_list e a concatena
-                a hist_edges.
-
-                Parâmetros:
-                - flips: lista de edges flipadas.
-                - solved_edges_list: tabela com mapeamento.
-                - hist_edges: string/lista acumuladora de história.
-                """
                 for piece in flips:
                     for j in range(len(solved_edges_list)):
                         if solved_edges_list[j][0] == piece or solved_edges_list[j][0] == piece[::-1]:
@@ -232,13 +190,13 @@ def solve_from_file_2(json_path="cube_state.json"):
                 return hist_edges
 
 
-            # As posições dos stickers de edges no string `state` (indices onde estão os stickers)
+            # As posições das edges no string `state`
             edges = [1, 3, 5, 7, 10, 12, 14, 16, 19, 21, 23, 25, 28, 30, 32, 34, 37, 39, 41, 43, 46, 48, 50, 52]
             edges_list = []
             for i in range(len(edges)):
                 edges_list += [state[edges[i]]]
 
-            # Tabela de edges resolvidas: cada par [nome_da_aresta, letra] mapeia a aresta à letra do diagrama.
+            # Tabela de edges resolvidas: cada par [nome_da_edge, letra] mapeia a edge à letra do diagrama.
             solved_edges_list = [
                 ['UB', 'A'], ['UR', 'B'], ['UF', 'C'], ['UL', 'D'],
                 ['LU', 'E'], ['LF', 'F'], ['LD', 'G'], ['LB', 'H'],
@@ -248,7 +206,7 @@ def solve_from_file_2(json_path="cube_state.json"):
                 ['DF', 'U'], ['DR', 'V'], ['DB', 'W'], ['DL', 'X']
             ]
 
-            # Mapeamento auxiliares: para cada notação de aresta, quais indices na edges_list correspondem
+            # Mapeamento auxiliares: para cada notação de edges, quais indices na edges_list correspondem
             map_edges_list = [
                 ['UB', (0, 20)], ['BU', (20, 0)], ['UR', (2, 4)], ['RU', (4, 2)],
                 ['UF', (3, 8)], ['FU', (8, 3)], ['UL', (1, 16)], ['LU', (16, 1)],
@@ -260,74 +218,76 @@ def solve_from_file_2(json_path="cube_state.json"):
 
             # Executa a detecção de certas e flips nas edges
             certas, flips, counter = certas_flips_edges(edges_list, map_edges_list)  # Encontramos todas as peças certas e flipadas
-            ciclos = 0
-            continuar = True
+            # Caso todas as edges estejam certas, apenas pule essa parte
+            if len(certas) == 24:
+                hist_edges = []
+            else:
+                ciclos = 0
+                continuar = True
 
-            hist_edges = []         # inicialmente nossa historia está vazia
-            buffer = "DF"           # buffer inicial escolhido
-            buffer = test_buffer_1(buffer, certas, flips, solved_edges_list)  # garante que buffer seja uma peça errada
-            certas.append("DF")    # marca DF/FD como tratadas para não serem alvo novamente
-            certas.append("FD")
-            target = ""             # target atual não determinado ainda
+                hist_edges = []         # inicialmente nossa historia está vazia
+                buffer = "DF"           # buffer inicial escolhido
+                buffer = test_buffer_1(buffer, certas, flips, solved_edges_list)  # garante que buffer seja uma peça errada
+                certas.append("DF")    # marca DF/FD como tratadas para não serem alvo novamente
+                certas.append("FD")
+                target = ""             # target atual não determinado ainda
 
-            # Loop principal para construir a história das edges até counter > 0
-            while counter > 0:
-                # Se o buffer não for a aresta DF/FD, adiciona a letra correspondente na história
-                if buffer not in ("DF", "FD"):
-                    for j in range(len(solved_edges_list)):  # procura a letra correspondente ao buffer
-                        if (solved_edges_list[j][0] == buffer):
-                            hist_edges += solved_edges_list[j][1]
-                            counter = counter - 1               # decrementa o contador de peças pendentes
-                            break
-
-                # Encontra o próximo target dado o buffer (usa a tabela map_edges_list)
-                for k in range(len(map_edges_list)):
-                    if map_edges_list[k][0] == buffer:
-                        target = edges_list[map_edges_list[k][1][0]] + edges_list[map_edges_list[k][1][1]]
-                        continuar = True
-                        break
-
-                # Enquanto houver um ciclo em andamento (seguir links até retornar a 'certas')
-                while continuar and (counter > 0):
-
-                    # Adiciona letra do target à história
-                    for j in range(len(solved_edges_list)):
-                        if (solved_edges_list[j][0] == target):
-                            hist_edges += solved_edges_list[j][1]
-                            counter = counter - 1               # decrementa o contador
-                            break
-
-                    if counter != 0:
-                        # Se ainda restam peças, segue para o próximo link (o próximo lugar onde a peça aponta)
-                        for k in range(len(map_edges_list)):
-                            if map_edges_list[k][0] == target:
-                                certas.append(target)           # marca target como "certa"
-                                certas.append(target[::-1])     # e também sua inversa
-                                # calcula o próximo target consultando edges_list e map_edges_list
-                                target = edges_list[map_edges_list[k][1][0]] + edges_list[map_edges_list[k][1][1]]
+                # Loop principal para construir a história das edges até counter > 0
+                while counter > 0:
+                    # Se o buffer não for a aresta DF/FD, adiciona a letra correspondente na história
+                    if buffer not in ("DF", "FD"):
+                        for j in range(len(solved_edges_list)):  # procura a letra correspondente ao buffer
+                            if (solved_edges_list[j][0] == buffer):
+                                hist_edges += solved_edges_list[j][1]
+                                counter = counter - 1               # decrementa o contador de peças pendentes
                                 break
 
-                        # Se o novo target já estava em 'certas', então fechamos o ciclo
-                        if target not in certas:
+                    # Encontra o próximo target dado o buffer (usa a tabela map_edges_list)
+                    for k in range(len(map_edges_list)):
+                        if map_edges_list[k][0] == buffer:
+                            target = edges_list[map_edges_list[k][1][0]] + edges_list[map_edges_list[k][1][1]]
                             continuar = True
-                        elif target in certas:
-                            continuar = False
-                            ciclos = ciclos + 1  # contabiliza um ciclo completo
-                            counter = counter + 1  # ajuste de contagem
-                            # escolhe um novo buffer que não esteja em 'certas' nem 'flips'
-                            buffer = test_buffer_1(target, certas, flips, map_edges_list)
+                            break
+
+                    # Enquanto houver um ciclo em andamento (seguir links até retornar a 'certas')
+                    while continuar and (counter > 0):
+
+                        # Adiciona letra do target à história
+                        for j in range(len(solved_edges_list)):
+                            if (solved_edges_list[j][0] == target):
+                                hist_edges += solved_edges_list[j][1]
+                                counter = counter - 1               # decrementa o contador
+                                break
+
+                        if counter != 0:
+                            # Se ainda restam peças, segue para o próximo link (o próximo lugar onde a peça aponta)
+                            for k in range(len(map_edges_list)):
+                                if map_edges_list[k][0] == target:
+                                    certas.append(target)           # marca target como "certa"
+                                    certas.append(target[::-1])     # e também sua inversa
+                                    # calcula o próximo target consultando edges_list e map_edges_list
+                                    target = edges_list[map_edges_list[k][1][0]] + edges_list[map_edges_list[k][1][1]]
+                                    break
+
+                            # Se o novo target já estava em 'certas', então fechamos o ciclo
+                            if target not in certas:
+                                continuar = True
+                            elif target in certas:
+                                continuar = False
+                                ciclos = ciclos + 1  # contabiliza um ciclo completo
+                                counter = counter + 1  # ajuste de contagem
+                                # escolhe um novo buffer que não esteja em 'certas' nem 'flips'
+                                buffer = test_buffer_1(target, certas, flips, map_edges_list)
 
 
-            def remover_strings_especificas_edges(lista):
-                strings_para_remover = {"FD", "DF"}
-                return [item for item in lista if item not in strings_para_remover]
+                def remover_strings_especificas_edges(lista):
+                    strings_para_remover = {"FD", "DF"}
+                    return [item for item in lista if item not in strings_para_remover]
 
-            flips = remover_strings_especificas_edges(flips)
+                flips = remover_strings_especificas_edges(flips)
 
-
-
-            # Depois de construir a história, adicionamos os flips detectados
-            hist_edges = adicionar_flips_1(flips, solved_edges_list, hist_edges)  # adiciona os flips
+                # Depois de construir a história, adicionamos os flips detectados
+                hist_edges = adicionar_flips_1(flips, solved_edges_list, hist_edges)  # adiciona os flips
 
             #####################
             #  LEITURA PARIDADE #
@@ -345,27 +305,10 @@ def solve_from_file_2(json_path="cube_state.json"):
             #####################
 
             def certas_flips_corners(corners_list, map_corners_list):
-                """
-                Detecta corners 'certos' e corners rotacionados (em sentido horário ou anti-horário).
-
-                Parâmetros:
-                - corners_list: lista de stickers das posições de corners extraídas do state.
-                - map_corners_list: tabelas de mapeamento para cada canto (3 indices por canto).
-
-                Retorna:
-                - certas: lista de corners já corretos (em qualquer rotação equivalente).
-                - flips_ah: lista de corners rotacionados anti-horário.
-                - flips_h: lista de corners rotacionados horário.
-                - counter: contador inicial de corners a serem resolvidos.
-                """
                 counter = 7
                 flips_h = []
                 flips_ah = []
                 certas = []
-
-                # O padrão é o mesmo que para edges, mas com 3 letras por canto.
-                # Cada bloco testa uma das 8 posições de canto e classifica como "certa",
-                # "rotacionada horario" (flips_h) ou "rotacionada anti-horario" (flips_ah).
 
                 # Canto ULB / LBU / BUL
                 if corners_list[map_corners_list[0][1][0]] + corners_list[map_corners_list[0][1][1]] + corners_list[map_corners_list[0][1][2]] == "ULB":
@@ -477,11 +420,6 @@ def solve_from_file_2(json_path="cube_state.json"):
                 return [piece[i:] + piece[:i] for i in range(len(piece))]
 
             def test_buffer_2(piece, certas, flips_ah, flips_h, solved_corners_list):
-                """
-                Equivalente a test_buffer_1, mas adaptado para corners.
-                - Usa incrementos de 3 em 3 para iterar pelos pares de letras em solved_corners_list.
-                - Garante que o buffer de corners inicial apontado seja realmente uma peça errada.
-                """
                 ready=False
                 inc=-3
                 rotacoes_ah  = [rot for p in flips_ah for rot in rotacoes_horarias(p)]
@@ -496,11 +434,6 @@ def solve_from_file_2(json_path="cube_state.json"):
 
 
             def adicionar_flips_2(flips_ah, flips_h, solved_corners_list, hist_corners):
-                """
-                Adiciona as letras dos corners rotacionados (horário e anti-horário) à história.
-                - Para rotações antihorárias, compara a peça com sua rotação e adiciona letra correspondente.
-                - Para rotações horárias, faz o mesmo com a rotação horária.
-                """
                 def rotacionar_antihorario(piece):
                     # rotaciona a string de 3 caracteres para simular a rotação antihorária
                     return piece[2] + piece[0] + piece[1]
@@ -531,13 +464,13 @@ def solve_from_file_2(json_path="cube_state.json"):
 
                 return hist_corners
 
-            # Índices na string 'state' correspondentes aos stickers de corners
+            # Índices das corners na string 'state'
             corners = [0, 2, 6, 8, 9, 11, 15, 17, 18, 20, 24, 26, 27, 29, 33, 35, 36, 38, 42, 44, 45, 47, 51, 53]
             corners_list = []
             for i in range(len(corners)):
                 corners_list += [state[corners[i]]]
 
-            # Tabela de corners resolvidos: mapeia notação do canto para letra
+            # Tabela de corners resolvidos: mapeia notação das corners para letras
             solved_corners_list = [
                 ['ULB', 'A'], ['UBR', 'B'], ['URF', 'C'], ['UFL', 'D'],
                 ['LBU', 'E'], ['LUF', 'F'], ['LFD', 'G'], ['LDB', 'H'],
@@ -561,82 +494,86 @@ def solve_from_file_2(json_path="cube_state.json"):
 
             # Executa a detecção inicial para corners
             certas, flips_ah, flips_h, counter = certas_flips_corners(corners_list, map_corners_list)  # Obtém listas e contador
-            ciclos = 0
-            continuar = True
-            hist_corners = []        # acumulador de letras para história dos corners
-            buffer = "ULB"           # buffer inicial para corners
-            buffer = test_buffer_2(buffer, certas, flips_ah, flips_h, map_corners_list)  # garante buffer válido
-            # marca as rotações equivalentes do buffer como já tratadas
-            certas.append("ULB")
-            certas.append("LBU")
-            certas.append("BUL")
-            target = ""              # target inicial desconhecido
+            # Se todas as pontas estiverem certas, pula essa parte
+            if len(certas) == 24:
+                hist_corners = []
+            else:
+                ciclos = 0
+                continuar = True
+                hist_corners = []        # acumulador de letras para história dos corners
+                buffer = "ULB"           # buffer inicial para corners
+                buffer = test_buffer_2(buffer, certas, flips_ah, flips_h, map_corners_list)  # garante buffer válido
+                # marca as rotações equivalentes do buffer como já tratadas
+                certas.append("ULB")
+                certas.append("LBU")
+                certas.append("BUL")
+                target = ""              # target inicial desconhecido
 
 
-            # Loop principal para construir a história dos corners
-            while counter > 0:
+                # Loop principal para construir a história dos corners
+                while counter > 0:
 
-                # Se o buffer não for uma das rotações de ULB, adiciona a letra correspondente
-                if buffer not in ("ULB", "LBU", "BUL"):
-                    for j in range(len(solved_corners_list)):
-                        if (solved_corners_list[j][0] == buffer):
-                            hist_corners += solved_corners_list[j][1]            
-                            counter = counter - 1
-                            break
-
-                # Acha a próxima peça da sequência dado o buffer usando map_corners_list
-                for k in range(len(map_corners_list)):
-                    if map_corners_list[k][0] == buffer:
-                        target = (
-                            corners_list[map_corners_list[k][1][0]]
-                            + corners_list[map_corners_list[k][1][1]]
-                            + corners_list[map_corners_list[k][1][2]]
-                        )
-                        continuar = True
-                        break
-
-                # Segue a cadeia até encontrar uma peça já marcada como 'certa'
-                while continuar and (counter > 0):
-
-                    for j in range(len(solved_corners_list)):
-                        if (solved_corners_list[j][0] == target):
-                            hist_corners += solved_corners_list[j][1]
-                            counter = counter - 1
-                            break
-
-                    if counter != 0:
-                        for k in range(len(map_corners_list)):
-                            if map_corners_list[k][0] == target:
-                                # adiciona todas as rotações equivalentes à lista 'certas'
-                                certas.append(target[0] + target[1] + target[2])
-                                certas.append(target[2] + target[0] + target[1])
-                                certas.append(target[1] + target[2] + target[0])
-                                # define o próximo target consultando corners_list
-                                target = (
-                                    corners_list[map_corners_list[k][1][0]]
-                                    + corners_list[map_corners_list[k][1][1]]
-                                    + corners_list[map_corners_list[k][1][2]]
-                                )
+                    # Se o buffer não for uma das rotações de ULB, adiciona a letra correspondente
+                    if buffer not in ("ULB", "LBU", "BUL"):
+                        for j in range(len(solved_corners_list)):
+                            if (solved_corners_list[j][0] == buffer):
+                                hist_corners += solved_corners_list[j][1]            
+                                counter = counter - 1
                                 break
 
-                        if target not in certas:
+                    # Acha a próxima peça da sequência dado o buffer usando map_corners_list
+                    for k in range(len(map_corners_list)):
+                        if map_corners_list[k][0] == buffer:
+                            target = (
+                                corners_list[map_corners_list[k][1][0]]
+                                + corners_list[map_corners_list[k][1][1]]
+                                + corners_list[map_corners_list[k][1][2]]
+                            )
                             continuar = True
-                        elif target in certas:
-                            continuar = False
-                            ciclos = ciclos + 1
-                            counter = counter + 1
-                            buffer = test_buffer_2(target, certas, flips_ah, flips_h, map_corners_list)
+                            break
 
-            def remover_strings_especificas(lista):
-                strings_para_remover = {"ULB", "LBU", "BUL"}
-                return [item for item in lista if item not in strings_para_remover]
+                    # Segue a cadeia até encontrar uma peça já marcada como 'certa'
+                    while continuar and (counter > 0):
 
-            flips_h= remover_strings_especificas(flips_h)
-            flips_ah = remover_strings_especificas(flips_ah)
+                        for j in range(len(solved_corners_list)):
+                            if (solved_corners_list[j][0] == target):
+                                hist_corners += solved_corners_list[j][1]
+                                counter = counter - 1
+                                break
+
+                        if counter != 0:
+                            for k in range(len(map_corners_list)):
+                                if map_corners_list[k][0] == target:
+                                    # adiciona todas as rotações equivalentes à lista 'certas'
+                                    certas.append(target[0] + target[1] + target[2])
+                                    certas.append(target[2] + target[0] + target[1])
+                                    certas.append(target[1] + target[2] + target[0])
+                                    # define o próximo target consultando corners_list
+                                    target = (
+                                        corners_list[map_corners_list[k][1][0]]
+                                        + corners_list[map_corners_list[k][1][1]]
+                                        + corners_list[map_corners_list[k][1][2]]
+                                    )
+                                    break
+
+                            if target not in certas:
+                                continuar = True
+                            elif target in certas:
+                                continuar = False
+                                ciclos = ciclos + 1
+                                counter = counter + 1
+                                buffer = test_buffer_2(target, certas, flips_ah, flips_h, map_corners_list)
+
+                def remover_strings_especificas(lista):
+                    strings_para_remover = {"ULB", "LBU", "BUL"}
+                    return [item for item in lista if item not in strings_para_remover]
+
+                flips_h= remover_strings_especificas(flips_h)
+                flips_ah = remover_strings_especificas(flips_ah)
 
 
-            # Após construir a história, adicionamos as entradas relativas às rotações detectadas
-            hist_corners = adicionar_flips_2(flips_ah, flips_h, solved_corners_list, hist_corners)
+                # Após construir a história, adicionamos as entradas relativas às rotações detectadas
+                hist_corners = adicionar_flips_2(flips_ah, flips_h, solved_corners_list, hist_corners)
 
             ###############
             #  HISTORIA   #
@@ -733,89 +670,96 @@ def solve_from_file_2(json_path="cube_state.json"):
 
             def gerar_solucao(hist_edges, hist_corners):
                 seq_final = []
+
                 # EDGES
                 for i, letra in enumerate(hist_edges):
-                    # se for “PARIDADE” ou “NO PARIDADE” já trata depois
+                    # se for “PARIDADE” ou “NO PARIDADE”, pula
                     if letra in ("PARIDADE", "NO PARIDADE"):
                         continue
-                    # M2
+                    # M2 para par ou impar
                     if (i + 1) % 2 == 0:
                         seq_final.append(M2_even[letra])
                     else:
                         seq_final.append(M2_odd[letra])
-                # PARIDADE
-                # (olha só o último item da lista de edges)
+
+                # PARIDADE (olha só o último item da lista de edges)
                 if len(hist_edges) > 0:
                     if hist_edges[-1] == "PARIDADE":
                         seq_final.append(alg_paridade)
                     # se for "NO PARIDADE" não faz nada
+
                 # CORNERS
                 for letra in hist_corners:
                     seq_final.append(OP_table[letra].replace("Y", alg_Y))
 
                 return " ".join(seq_final)
 
-            # Simplificador
             def simplificar_movimentos(seq_str):
-                """
-                Simplifica uma sequência de movimentos do cubo mágico.
-                Regras aplicadas:
-                X X   -> X2
-                X X'  -> (cancela)
-                X' X' -> X2
-                X' X  -> (cancela)
-                X2 X  -> X'
-                X2 X' -> X
-                X' X2 -> X
-                X X2  -> X'
-                """
                 moves = seq_str.split()
-                stack = []
 
-                def combina(a, b):
-                    # Extrai o eixo (L, R, U, D, F, B)
-                    base_a = a[0]
-                    base_b = b[0]
-                    if base_a != base_b:
-                        return None  # eixos diferentes não combina
+                grupos = [
+                    {'R', 'L'},
+                    {'U', 'D'},
+                    {'F', 'B'}
+                ]
 
-                    suf_a = a[1:] if len(a) > 1 else ''
-                    suf_b = b[1:] if len(b) > 1 else ''
+                def comutam(a, b):
+                    for g in grupos:
+                        if a in g and b in g:
+                            return True
+                    return False
 
-                    # Todas as combinações possíveis
-                    if suf_a == '' and suf_b == '':
-                        return base_a + '2'
-                    if suf_a == "'" and suf_b == "'":
-                        return base_a + '2'
-                    if (suf_a == '' and suf_b == "'") or (suf_a == "'" and suf_b == ''):
-                        return ''  # cancelam
-                    if suf_a == '2' and suf_b == '':
-                        return base_a + "'"
-                    if suf_a == '2' and suf_b == "'":
-                        return base_a
-                    if suf_a == '' and suf_b == '2':
-                        return base_a + "'"
-                    if suf_a == "'" and suf_b == '2':
-                        return base_a
-                    return None
+                def move_to_val(m):
+                    if len(m) == 1:
+                        return 1
+                    if m[1] == "'":
+                        return -1
+                    if m[1] == '2':
+                        return 2
 
-                for move in moves:
-                    if stack:
-                        comb = combina(stack[-1], move)
-                        if comb is not None:
-                            stack.pop()
-                            if comb != '':
-                                stack.append(comb)
-                        else:
-                            stack.append(move)
-                    else:
-                        stack.append(move)
+                def val_to_move(base, val):
+                    val %= 4
+                    if val == 0:
+                        return None
+                    if val == 1:
+                        return base
+                    if val == 2:
+                        return base + '2'
+                    if val == 3:
+                        return base + "'"
 
-                # repete até não haver mais simplificações possíveis (casos tipo X X X)
-                simplified = ' '.join(stack)
-                if simplified != seq_str:
-                    return simplificar_movimentos(simplified)
-                return simplified
+                i = 0
+                while i < len(moves):
+                    j = i + 1
+
+                    while j < len(moves):
+                        if moves[i][0] == moves[j][0]:
+
+                            # verifica se pode "atravessar" o caminho
+                            pode = True
+                            for k in range(i + 1, j):
+                                if not comutam(moves[k][0], moves[i][0]):
+                                    pode = False
+                                    break
+
+                            if pode:
+                                val = move_to_val(moves[i]) + move_to_val(moves[j])
+                                novo = val_to_move(moves[i][0], val)
+
+                                # remove j primeiro
+                                moves.pop(j)
+                                moves.pop(i)
+
+                                if novo:
+                                    moves.insert(i, novo)
+
+                                i = -1  # reinicia
+                                break
+
+                        j += 1
+                    i += 1
+
+                return ' '.join(moves)
 
             # Execução
             solucao = gerar_solucao(hist_edges, hist_corners)
@@ -832,21 +776,7 @@ def solve_from_file_2(json_path="cube_state.json"):
                 "robot_sequence": robot_sequence,
                 "inverted_sequence": inverted_sequence
             }
-    
-        # ==================================================
-        # TIMEOUT
-        # ==================================================
-
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(solver_task)
-            result = future.result(timeout=3)  
-
-        return result
-
-    except concurrent.futures.TimeoutError:
-        return {
-            "error": "Error. Probably cubestring is invalid."
-        }
+        return solver_m2op()
 
     except Exception as e:
         return {
