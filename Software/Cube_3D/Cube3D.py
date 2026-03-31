@@ -55,7 +55,7 @@ class Cubie:
 class RubiksCube:
     def __init__(self):
         self.cubies = [Cubie((x, y, z)) for x in [-1,0,1] for y in [-1,0,1] for z in [-1,0,1]]
-        self.filename = "state.json"
+        self.filename = "Software\Cube_3D\state.json"
         self.last_mtime = 0  # Guarda a última vez que o arquivo foi lido
         self.current_state_str = ""
         self.check_for_updates() # Primeira leitura
