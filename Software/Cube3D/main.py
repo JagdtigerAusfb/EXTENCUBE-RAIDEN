@@ -17,7 +17,7 @@ from kociemba_solver import solve_from_file
 
 BASE_DIR = os.path.dirname(__file__)
 
-logo_path = os.path.join(BASE_DIR, "logo_pro.jpg")
+logo_path = os.path.join(BASE_DIR, "logo_semfundo.png")
 cube_state_path = os.path.join(BASE_DIR, "cube_state.json")
 
 RES = (1400, 750)
@@ -277,15 +277,52 @@ def load_logo(path):
 
 def open_settings(robot):
     root = tk.Tk()
-    root.withdraw() 
-    p = simpledialog.askstring("Porta", "Porta COM:", initialvalue=robot.port)
-    if p: robot.connect(p)
-    s = simpledialog.askinteger("Velocidade", "Velocidade (Passos):", initialvalue=robot.speed)
-    if s: robot.speed = s
-    d = simpledialog.askinteger("Delay", "Delay (ms):", initialvalue=robot.delay)
-    if d is not None: robot.delay = d
-    root.destroy()
-    pygame.event.clear()
+    root.title("Configurations")
+
+    tk.Label(root, text="Port COM:").grid(row=0, column=0, padx=10, pady=5)
+    port_entry = tk.Entry(root)
+    port_entry.insert(0, robot.port if robot.port else "")
+    port_entry.grid(row=0, column=1, padx=10, pady=5)
+
+    tk.Label(root, text="Speed:").grid(row=1, column=0, padx=10, pady=5)
+    speed_entry = tk.Entry(root)
+    speed_entry.insert(0, str(robot.speed))
+    speed_entry.grid(row=1, column=1, padx=10, pady=5)
+
+    tk.Label(root, text="Delay (ms):").grid(row=2, column=0, padx=10, pady=5)
+    delay_entry = tk.Entry(root)
+    delay_entry.insert(0, str(robot.delay))
+    delay_entry.grid(row=2, column=1, padx=10, pady=5)
+
+    def apply():
+        p = port_entry.get()
+        s = speed_entry.get()
+        d = delay_entry.get()
+        if p:
+            robot.connect(p)
+        try:
+            robot.speed = int(s)
+        except:
+            pass
+        try:
+            robot.delay = int(d)
+        except:
+            pass
+        root.destroy()
+        pygame.event.clear()
+
+    tk.Button(root, text="OK", command=apply).grid(row=3, column=0, columnspan=2, pady=10)
+
+    root.update_idletasks()
+    w = root.winfo_width()
+    h = root.winfo_height()
+    screen_w = root.winfo_screenwidth()
+    screen_h = root.winfo_screenheight()
+    x = (screen_w // 2) - (w // 2)
+    y = (screen_h // 2) - (h // 2)
+    root.geometry(f"{w}x{h}+{x}+{y}")
+
+    root.mainloop()
 
 def run_solver(cube):
     cube.save_to_json()
@@ -293,7 +330,9 @@ def run_solver(cube):
     if "error" in res: return
 
     cube.robot.send_moves(res["robot_sequence"], wait_completion=False)
-    
+    cube.robot.last_solution = res["solution"]
+    cube.robot.last_move_count = res["move_count"]
+
     moves = res["solution"].split()
     for m in moves:
         face = m[0]
@@ -315,30 +354,81 @@ def draw_hud(robot, logo_tex):
     glMatrixMode(GL_PROJECTION); glPushMatrix(); glLoadIdentity()
     glOrtho(0, RES[0], RES[1], 0, -1, 1)
     glMatrixMode(GL_MODELVIEW); glPushMatrix(); glLoadIdentity()
+
+    # logo 
     if logo_tex[0]:
         glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D, logo_tex[0])
         glColor3f(1, 1, 1)
         glBegin(GL_QUADS)
         glTexCoord2f(0,0); glVertex2f(20, 20)
-        glTexCoord2f(1,0); glVertex2f(200, 20)
-        glTexCoord2f(1,1); glVertex2f(200, 180)
-        glTexCoord2f(0,1); glVertex2f(20, 180)
+        glTexCoord2f(1,0); glVertex2f(240, 20)
+        glTexCoord2f(1,1); glVertex2f(240, 220)
+        glTexCoord2f(0,1); glVertex2f(20, 220)
         glEnd(); glDisable(GL_TEXTURE_2D)
-    
-    if robot.is_busy: glColor3f(0.8, 0.2, 0.2) 
-    elif not robot.ser: glColor3f(0.4, 0.4, 0.4)
-    else: glColor3f(0.29, 0.42, 0.44) 
-        
-    x_s, x_e = RES[0] - 380, RES[0] - 20
-    glBegin(GL_QUADS)
-    glVertex2f(x_s, 20); glVertex2f(x_e, 20)
-    glVertex2f(x_e, 180); glVertex2f(x_s, 180)
-    glEnd()
 
-    status_text = "BUSY..." if robot.is_busy else (f"TIME: {robot.last_solve_time} s" if robot.ser else "OFFLINE")
-    draw_text_hud(0, 0, status_text, 42, center_x=(x_s+x_e)/2, center_y=RES[1]-100)
-    
+    # HUD
+    box_w, box_h = 380, 70
+    gap = 12
+    margin_right = 20
+    current_y_top = 20 
+    x_start = RES[0] - box_w - margin_right
+    x_end = RES[0] - margin_right
+    center_x = (x_start + x_end) / 2
+
+    def draw_hud_element(y_offset, color, label, value, is_solution=False):
+        gl_y_top = y_offset
+        gl_y_bottom = y_offset + box_h
+
+        glColor3f(*color)
+        glBegin(GL_QUADS)
+        glVertex2f(x_start, gl_y_top)
+        glVertex2f(x_end, gl_y_top)
+        glVertex2f(x_end, gl_y_bottom)
+        glVertex2f(x_start, gl_y_bottom)
+        glEnd()
+        text_y_center = y_offset + (box_h / 2)
+        text_y_gl = RES[1] - text_y_center
+
+        if is_solution:
+            import re
+            sol_text = f"{label}: {value}" if value else f"{label}: --"
+            lines = re.findall(r'.{1,35}(?:\s|$)', sol_text)[:3]
+
+            start_line_y = text_y_center - ((len(lines)-1) * 9)
+
+            for i, line in enumerate(lines):
+                line_y = start_line_y + (i * 18)
+                draw_text_hud(
+                    0, 0, line.strip(), 16,
+                    center_x=center_x,
+                    center_y=RES[1] - line_y)
+        else:
+            display = f"{label}: {value}"
+            draw_text_hud(
+                0, 0, display, 22,
+                center_x=center_x,
+                center_y=text_y_gl)
+
+        return y_offset + box_h + gap
+
+    # painel supeiror
+    sol_val = robot.last_solution if hasattr(robot, 'last_solution') and robot.last_solution else "--"
+    y_cursor = draw_hud_element(current_y_top, (0.1, 0.2, 0.3), "SOLUTION", sol_val, is_solution=True)
+
+    moves_val = getattr(robot, 'last_move_count', "--")
+    y_cursor = draw_hud_element(y_cursor, (0.2, 0.2, 0.3), "MOVES", moves_val)
+
+    if robot.is_busy:
+        t_color, t_val = (0.8, 0.2, 0.2), "BUSY..."
+    elif not robot.ser:
+        t_color, t_val = (0.4, 0.4, 0.4), "OFFLINE"
+    else:
+        t_color, t_val = (0.2, 0.5, 0.3), f"{robot.last_solve_time}s"
+
+    draw_hud_element(y_cursor, t_color, "TIMER", t_val)
+
+    # painel inferior
     glColor4f(0, 0, 0, 0.6)
     glBegin(GL_QUADS)
     glVertex2f(0, RES[1]-60); glVertex2f(RES[0], RES[1]-60)
