@@ -8,6 +8,7 @@ import time
 import serial
 import serial.tools.list_ports
 from kociemba_solver import solve_from_file
+import tkinter as tk  # <-- ADICIONADO PARA A TELA DE CONFIGURAÇÃO
 
 # =========================
 # CONFIGURAÇÕES TÉCNICAS
@@ -17,7 +18,6 @@ BASE_DIR = os.path.dirname(__file__)
 
 logo_path = os.path.join(BASE_DIR, "logo_pro.jpg")
 cube_state_path = os.path.join(BASE_DIR, "cube_state.json")
-
 
 RES = (1400, 750)
 COLOR_MAP = {
@@ -30,7 +30,7 @@ RGB_TO_CHAR = {v: k for k, v in COLOR_MAP.items()}
 MOVE_TABLE = {
     "U1": "A", "U3": "B", "U2": "C", "R1": "D", "R3": "E", "R2": "F",
     "F1": "G", "F3": "H", "F2": "I", "D1": "J", "D3": "K", "D2": "L",
-    "L1": "M", "L3": "N", "L2": "O", "B3": "P", "B1": "Q", "B2": "R"
+    "L1": "M", "L3": "N", "L2": "O", "B3": "Q", "B1": "P", "B2": "R"
 }
 
 # =========================
@@ -69,7 +69,6 @@ class RobotController:
             return False
 
     def check_for_done(self):
-        # Verifica se o robô terminou o movimento
         if not self.ser or not self.is_busy: return
         if self.ser.in_waiting:
             try:
@@ -77,7 +76,7 @@ class RobotController:
                 if line.startswith("DONE"):
                     parts = line.split()
                     if len(parts) > 1: self.last_solve_time = parts[1]
-                    self.is_busy = False # Libera o cubo para novos comandos
+                    self.is_busy = False 
                     pygame.event.clear()
             except: pass
 
@@ -94,7 +93,6 @@ class RobotController:
             
             if wait_completion:
                 self.is_busy = True
-                # Se for True, ele trava tudo 
             else:
                 self.is_busy = True
         except: self.is_busy = False
@@ -336,19 +334,118 @@ def draw_hud(robot, logo_tex):
     
     p_s = robot.port if robot.ser else "DISCONNECTED"
     draw_text_hud(25, 35, f"PORT: {p_s} | SPEED: {robot.speed} | DELAY: {robot.delay}ms", 18)
-    draw_text_hud(25, 10, "[S] Config  [X] Resolver  [R,L,U,D,F,B] Moves  [2] Double  [Shift] Inverse", 14)
+    draw_text_hud(25, 10, "[S] Config | [X] Resolver | [R,L,U,D,F,B] Moves | [2] Double | [Shift] Inverse | APERTE ESC PARA SAIR",  14)
 
     glPopMatrix(); glMatrixMode(GL_PROJECTION); glPopMatrix()
     glMatrixMode(GL_MODELVIEW); glEnable(GL_DEPTH_TEST)
+
+
+# =========================
+# Eixos de Coordendas
+# =========================
+
+def draw_axes_corner(rot_x, rot_y):
+    glMatrixMode(GL_MODELVIEW)
+    glPushMatrix()
+    glLoadIdentity()
+    glTranslatef(-3.2, -1, -6.0) 
+    glRotatef(rot_x, 1, 0, 0)
+    glRotatef(rot_y, 0, 1, 0)
+    glDisable(GL_DEPTH_TEST) 
+    glLineWidth(3.0)
+    glBegin(GL_LINES)
+    s = 0.7
+    
+    glColor3f(1.0, 1.0, 1.0); glVertex3f(0.0, 0.0, 0.0); glVertex3f(0.0, s, 0.0) 
+    glColor3f(0.0, 1.0, 0.0); glVertex3f(0.0, 0.0, 0.0); glVertex3f(0.0, 0.0, s) 
+    glColor3f(1.0, 0.5, 0.0); glVertex3f(0.0, 0.0, 0.0); glVertex3f(-s, 0.0, 0.0) 
+    glColor3f(1.0, 1.0, 0.0); glVertex3f(0.0, 0.0, 0.0); glVertex3f(0.0, -s, 0.0) 
+    glColor3f(1.0, 0.0, 0.0); glVertex3f(0.0, 0.0, 0.0); glVertex3f(s, 0.0, 0.0) 
+    glColor3f(0.0, 0.0, 1.0); glVertex3f(0.0, 0.0, 0.0); glVertex3f(0.0, 0.0, -s) 
+    glEnd()
+    glLineWidth(1.0)
+    
+    modelview = glGetDoublev(GL_MODELVIEW_MATRIX)
+    projection = glGetDoublev(GL_PROJECTION_MATRIX)
+    viewport = glGetIntegerv(GL_VIEWPORT)
+    
+    l_off = s + 0.1 
+    labels = [
+        ("Y (RIGHT)", (l_off, 0.0, 0.0)), ("X (FRONT)", (0.0, 0.0, l_off)), ("Z (UP)", (0.0, l_off, 0.0)),
+        ("-Y (LEFT)", (-l_off, 0.0, 0.0)), ("-Z (DOWN)", (0.0, -l_off, 0.0)), ("-X (BACK)", (0.0, 0.0, -l_off))
+    ]
+    
+    for label, pos in labels:
+        try:
+            win_x, win_y, win_z = gluProject(pos[0], pos[1], pos[2], modelview, projection, viewport)
+            if 0.0 <= win_z <= 1.0:
+                draw_text_hud(0, 0, label, 16, center_x=win_x, center_y=win_y)
+        except: pass
+    glEnable(GL_DEPTH_TEST)
+    glPopMatrix()
+
+# =========================
+# JANELA DE CONFIGURAÇÃO TKINTER
+# =========================
+
+def open_config_window(robot):
+    root = tk.Tk()
+    root.title("Configurações do Robô")
+    root.geometry("300x250")
+    
+    # Isso é essencial! Força a janela do Tkinter a ficar por cima da tela cheia do Pygame
+    root.attributes('-topmost', True) 
+    
+    # Centraliza a janelinha na tela
+    root.eval('tk::PlaceWindow . center')
+
+    tk.Label(root, text="Porta Serial (ex: COM4, /dev/ttyUSB0):", font=("Arial", 10)).pack(pady=(10, 0))
+    port_entry = tk.Entry(root, justify="center")
+    port_entry.insert(0, robot.port)
+    port_entry.pack(pady=5)
+
+    tk.Label(root, text="Velocidade do Robô (Speed):", font=("Arial", 10)).pack(pady=(10, 0))
+    speed_entry = tk.Entry(root, justify="center")
+    speed_entry.insert(0, str(robot.speed))
+    speed_entry.pack(pady=5)
+
+    tk.Label(root, text="Atraso (Delay em ms):", font=("Arial", 10)).pack(pady=(10, 0))
+    delay_entry = tk.Entry(root, justify="center")
+    delay_entry.insert(0, str(robot.delay))
+    delay_entry.pack(pady=5)
+
+    def save_and_close():
+        robot.port = port_entry.get().strip()
+        try:
+            robot.speed = int(speed_entry.get())
+            robot.delay = int(delay_entry.get())
+        except ValueError:
+            pass # Ignora caso o usuário digite texto em vez de número
+        
+        # Tenta conectar com a nova porta
+        robot.connect(robot.port)
+        root.destroy()
+
+    tk.Button(root, text="Salvar e Conectar", command=save_and_close, bg="#4CAF50", fg="white", font=("Arial", 10, "bold")).pack(pady=15)
+    
+    # Roda a janela (isso vai pausar o Pygame momentaneamente enquanto a janela estiver aberta)
+    root.mainloop()
 
 # =========================
 # LOOP PRINCIPAL
 # =========================
 
 def main():
+    global RES  
+    
     pygame.init()
-    pygame.display.set_mode(RES, DOUBLEBUF | OPENGL)
+    
+    info = pygame.display.Info()
+    RES = (info.current_w, info.current_h)
+    
+    pygame.display.set_mode(RES, DOUBLEBUF | OPENGL | FULLSCREEN)
     pygame.display.set_caption("RobotCube 3D - Unicamp Cube")
+    
     robot = RobotController(); cube = RubiksCube(robot)
     logo_data = load_logo(logo_path)
     rot_x, rot_y = 30, -30
@@ -356,8 +453,19 @@ def main():
 
     while True:
         for event in pygame.event.get():
-            if event.type == QUIT: pygame.quit(); return
+            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE): 
+                pygame.quit(); return
+            
             if event.type == KEYDOWN and not robot.is_busy:
+                
+                # --- AQUI ESTÁ O CHAMADO DA CONFIGURAÇÃO (TECLA S) ---
+                if event.key == K_s:
+                    # Desativa a captura exclusiva de mouse do pygame (se houver) para você poder clicar no Tkinter
+                    pygame.event.set_grab(False)
+                    open_config_window(robot)
+                    continue
+                # -----------------------------------------------------
+
                 mods = pygame.key.get_mods()
                 t = 3 if (mods & KMOD_SHIFT) else (2 if pygame.key.get_pressed()[K_2] else 1)
                 key_map = {K_r:'R', K_l:'L', K_u:'U', K_d:'D', K_f:'F', K_b:'B'}
@@ -369,20 +477,25 @@ def main():
             rot_y += rel[0] * 0.4; rot_x += rel[1] * 0.4
         else: pygame.mouse.get_rel()
 
-        cube.update_animation() # Atualiza a animação suave
-        robot.check_for_done()  # Verifica se o robô terminou para liberar o 'Busy'
+        cube.update_animation() 
+        robot.check_for_done()  
 
         glClearColor(0.12, 0.12, 0.14, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glMatrixMode(GL_PROJECTION); glLoadIdentity()
+        
         gluPerspective(45, (RES[0]/RES[1]), 0.1, 50.0)
         glMatrixMode(GL_MODELVIEW); glLoadIdentity()
         glTranslatef(0, 0, -10.0) 
+        
         glPushMatrix()
         glRotatef(rot_x, 1, 0, 0); glRotatef(rot_y, 0, 1, 0)
         cube.draw()
         glPopMatrix()
+        
+        draw_axes_corner(rot_x, rot_y)
         draw_hud(robot, logo_data)
+        
         pygame.display.flip()
         clock.tick(60)
 

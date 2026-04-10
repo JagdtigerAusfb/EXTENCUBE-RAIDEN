@@ -15,7 +15,7 @@ def converter_movimentos(seq):
         "F": "G", "F'": "H", "F2": "I",
         "D": "J", "D'": "K", "D2": "L",
         "L": "M", "L'": "N", "L2": "O",
-        "B'": "P", "B": "Q", "B2": "R"
+        "B": "P", "B'": "Q", "B2": "R"
     }
     return "".join(tabela[m] for m in seq.split() if m in tabela)
 

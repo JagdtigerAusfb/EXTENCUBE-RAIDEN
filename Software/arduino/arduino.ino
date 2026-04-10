@@ -2,25 +2,29 @@
 // DEFINIÇÃO DOS PINOS
 // ================================
 
-#define DIR_PIN_1 31 // motor U
-#define STEP_PIN_1 30
-#define DIR_PIN_2 35 // motor R
-#define STEP_PIN_2 34 
-#define DIR_PIN_3 A12 // motor F
-#define STEP_PIN_3 A13
-#define DIR_PIN_4 A6 // motor D
-#define STEP_PIN_4 A7
-#define DIR_PIN_5 A0 // motor L
-#define STEP_PIN_5 A1
-#define DIR_PIN_6 43 // motor B
-#define STEP_PIN_6 42
+#define DIR_PIN_1  49   // motor U
+#define STEP_PIN_1 51
+#define ENABLE_PIN_1 47
 
-#define ENABLE_PIN_1 14
-#define ENABLE_PIN_2 16
-#define ENABLE_PIN_3 49
-#define ENABLE_PIN_4 48
-#define ENABLE_PIN_5 A3
-#define ENABLE_PIN_6 19
+#define DIR_PIN_2  39   // motor R
+#define STEP_PIN_2 41
+#define ENABLE_PIN_2 37
+
+#define DIR_PIN_3  29   // motor F
+#define STEP_PIN_3 31
+#define ENABLE_PIN_3 27
+
+#define DIR_PIN_4  A3   // motor D
+#define STEP_PIN_4 A4
+#define ENABLE_PIN_4 A5
+
+#define DIR_PIN_5  A0   // motor L
+#define STEP_PIN_5 A1
+#define ENABLE_PIN_5 A2
+
+#define DIR_PIN_6  A6   // motor B
+#define STEP_PIN_6 A7
+#define ENABLE_PIN_6 A8
 
 // ================================
 // CONFIG
